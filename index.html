@@ -1,0 +1,3270 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ANDREA LEHKÁ SIMULÁTOR</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a0a2e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Andrea 😤">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
+<!-- SEO / Share -->
+<meta name="description" content="Prežiješ školský deň s Andreou? Short testy každý deň!">
+<meta property="og:title" content="Andrea Lehká Simulátor">
+<meta property="og:description" content="Prežiješ školský deň s Andreou? Short testy každý deň!">
+<meta property="og:type" content="website">
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Nunito:wght@400;700;900&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #FF3B3B; --yellow: #FFD60A; --blue: #3B82F6;
+    --green: #10B981; --pink: #FF6EB4; --purple: #8B5CF6;
+    --dark: #1a0a2e; --chalk: #f5f0e8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--dark);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.02) 40px, rgba(255,255,255,0.02) 41px),
+      repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.01) 40px, rgba(255,255,255,0.01) 41px);
+    pointer-events: none; z-index: 0;
+  }
+
+  .chalk-dust {
+    position: fixed; pointer-events: none; z-index: 9999;
+    border-radius: 50%; background: rgba(245,240,232,0.6);
+    animation: dustFly 1s ease-out forwards;
+  }
+  @keyframes dustFly {
+    0% { transform: scale(1) translate(0,0); opacity: 0.8; }
+    100% { transform: scale(3) translate(var(--dx), var(--dy)); opacity: 0; }
+  }
+
+  .emoji-bg {
+    position: fixed; opacity: 0.07;
+    pointer-events: none; z-index: 0;
+    animation: floatEmoji linear infinite;
+  }
+  @keyframes floatEmoji {
+    0% { transform: translateY(110vh) rotate(0deg); }
+    100% { transform: translateY(-10vh) rotate(360deg); }
+  }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: flex; justify-content: center; gap: 0.7rem; flex-wrap: wrap;
+    padding: 0.7rem 1rem;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(20px);
+  }
+  .stat-chip {
+    display: flex; align-items: center; gap: 0.4rem;
+    background: rgba(255,255,255,0.08); border-radius: 50px;
+    padding: 0.35rem 0.9rem; border: 1px solid rgba(255,255,255,0.12);
+  }
+  .stat-val { font-family: 'Permanent Marker', cursive; color: var(--yellow); font-size: 0.95rem; }
+  .stat-lbl { color: rgba(255,255,255,0.45); font-size: 0.75rem; }
+
+  /* HEADER */
+  header { position: relative; z-index: 10; text-align: center; padding: 2rem 1rem 1rem; }
+  .teacher-avatar {
+    width: 110px; height: 110px; border-radius: 50%;
+    background: linear-gradient(135deg, #8B5CF6, #FF6EB4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 4rem; margin: 0 auto 1rem;
+    border: 4px solid var(--yellow);
+    box-shadow: 0 0 30px rgba(255,214,10,0.5), 0 0 60px rgba(139,92,246,0.3);
+    animation: teacherFloat 3s ease-in-out infinite;
+    position: relative;
+  }
+  .teacher-avatar::after {
+    content: '😤'; position: absolute; font-size: 1.5rem;
+    bottom: -5px; right: -5px;
+    background: var(--red); border-radius: 50%;
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid white;
+    animation: bop 0.5s ease-in-out infinite alternate;
+  }
+  @keyframes teacherFloat {
+    0%,100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-12px) rotate(2deg); }
+  }
+  @keyframes bop { from { transform: scale(1); } to { transform: scale(1.2); } }
+
+  .site-title {
+    font-family: 'Permanent Marker', cursive;
+    font-size: clamp(2rem, 6vw, 4rem); color: var(--chalk);
+    text-shadow: 3px 3px 0 var(--red), 6px 6px 0 rgba(255,59,59,0.3);
+    letter-spacing: 2px; line-height: 1.1; margin-bottom: 0.5rem;
+  }
+  .subtitle {
+    font-family: 'Special Elite', cursive; color: var(--yellow);
+    font-size: 1rem; letter-spacing: 3px; text-transform: uppercase;
+  }
+
+  .anger-bar-container { margin: 1.5rem auto; max-width: 400px; padding: 0 1rem; }
+  .anger-label {
+    font-family: 'Permanent Marker', cursive; color: var(--red);
+    font-size: 1.1rem; margin-bottom: 0.4rem;
+    display: flex; justify-content: space-between;
+  }
+  .anger-bar {
+    height: 22px; background: rgba(255,255,255,0.1);
+    border-radius: 100px; border: 2px solid rgba(255,255,255,0.2); overflow: hidden;
+  }
+  .anger-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10B981, #FFD60A, #FF3B3B);
+    border-radius: 100px; transition: width 0.5s ease;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex; justify-content: center; gap: 0.5rem;
+    padding: 0 1rem; flex-wrap: wrap;
+    position: relative; z-index: 10; margin-bottom: 2rem;
+  }
+  .tab-btn {
+    font-family: 'Permanent Marker', cursive;
+    padding: 0.7rem 1.3rem; border-radius: 50px;
+    border: 3px solid transparent; cursor: pointer;
+    font-size: 0.95rem; transition: all 0.2s;
+  }
+  .tab-btn:hover { transform: translateY(-3px) scale(1.05); }
+  .tab-btn:active { transform: scale(0.95); }
+  .tab-btn[data-tab="short-test"] { background: var(--red);    color: white; border-color: #ff6b6b; }
+  .tab-btn[data-tab="story"]      { background: var(--blue);   color: white; border-color: #60a5fa; }
+  .tab-btn[data-tab="upgrade"]    { background: var(--purple); color: white; border-color: #a78bfa; }
+  .tab-btn[data-tab="oral"]       { background: var(--green);  color: white; border-color: #34d399; }
+  .tab-btn[data-tab="random"]     { background: #f59e0b; color: white; border-color: #fbbf24; }
+  .tab-btn[data-tab="casino"]     { background: linear-gradient(135deg,#b91c1c,#7c3aed); color: white; border-color: #f87171; }
+  .tab-btn[data-tab="boss"]       { background: linear-gradient(135deg,#111,#7f1d1d); color: #ff4444; border-color: #ff4444; font-family:'Permanent Marker',cursive; }
+  .tab-btn.active { box-shadow: 0 0 25px currentColor, 0 6px 20px rgba(0,0,0,0.4); transform: translateY(-4px) scale(1.08); }
+
+  /* ===== BOSS FIGHT ===== */
+  .boss-arena {
+    background: radial-gradient(ellipse at 50% 30%, #2d0808 0%, #0a0000 70%);
+    border: 2px solid rgba(255,68,68,0.3); border-radius: 24px;
+    padding: 1.5rem; margin-bottom: 1rem; text-align: center; position: relative; overflow: hidden;
+  }
+  .boss-arena::before {
+    content:''; position:absolute; inset:0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,0,0,0.02) 40px, rgba(255,0,0,0.02) 41px);
+    pointer-events:none;
+  }
+  .boss-sprite { font-size: 5rem; display: block; margin: 0 auto 0.5rem; transition: transform 0.1s; position: relative; z-index:1; }
+  .boss-sprite.hit { animation: bossHit 0.4s ease; }
+  .boss-sprite.dead { filter: grayscale(1); opacity: 0.4; }
+  @keyframes bossHit { 0%{transform:translateX(0)} 20%{transform:translateX(-12px) scale(1.1)} 40%{transform:translateX(12px)} 60%{transform:translateX(-8px)} 80%{transform:translateX(6px)} 100%{transform:translateX(0)} }
+  .boss-name { font-family:'Permanent Marker',cursive; color:#ff4444; font-size:1.3rem; text-shadow: 0 0 20px rgba(255,68,68,0.5); margin-bottom:0.3rem; }
+  .boss-hp-bar-wrap { background:rgba(0,0,0,0.5); border:1px solid rgba(255,68,68,0.3); border-radius:50px; height:22px; margin:0.5rem auto; max-width:400px; overflow:hidden; position:relative; }
+  .boss-hp-bar-fill { height:100%; border-radius:50px; transition:width 0.5s cubic-bezier(0.34,1.56,0.64,1); background:linear-gradient(90deg,#7f1d1d,#ff4444); box-shadow:0 0 10px rgba(255,68,68,0.6); }
+  .boss-hp-text { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Permanent Marker',cursive; font-size:0.75rem; color:white; text-shadow:0 1px 3px rgba(0,0,0,0.8); }
+  .boss-quote { font-family:'Special Elite',cursive; color:rgba(255,200,200,0.8); font-size:0.9rem; font-style:italic; min-height:2.5rem; margin:0.8rem 0; line-height:1.5; }
+  .boss-phase-badge { display:inline-block; font-family:'Permanent Marker',cursive; font-size:0.75rem; padding:0.2rem 0.8rem; border-radius:50px; margin-bottom:0.5rem; }
+  .phase-1 { background:rgba(255,68,68,0.15); color:#ff8888; border:1px solid rgba(255,68,68,0.3); }
+  .phase-2 { background:rgba(255,140,0,0.15); color:#ffaa44; border:1px solid rgba(255,140,0,0.4); }
+  .phase-3 { background:rgba(255,0,200,0.15); color:#ff88ff; border:1px solid rgba(255,0,200,0.4); }
+
+  .boss-attack-log { background:rgba(0,0,0,0.3); border:1px solid rgba(255,68,68,0.15); border-radius:12px; padding:0.8rem; max-height:120px; overflow-y:auto; margin-bottom:1rem; }
+  .boss-log-entry { font-size:0.8rem; color:rgba(245,240,232,0.6); padding:0.2rem 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+  .boss-log-entry:last-child { border-bottom:none; color:rgba(245,240,232,0.9); }
+  .boss-log-entry.dmg { color:#ff8888; }
+  .boss-log-entry.heal { color:#88ff88; }
+  .boss-log-entry.event { color:#ffcc44; }
+
+  .boss-action-row { display:flex; gap:0.8rem; flex-wrap:wrap; justify-content:center; margin-bottom:1rem; }
+  .boss-attack-btn {
+    font-family:'Permanent Marker',cursive; border:2px solid; border-radius:50px;
+    padding:0.8rem 1.5rem; cursor:pointer; font-size:0.95rem; transition:all 0.2s;
+    position:relative; overflow:hidden;
+  }
+  .boss-attack-btn:hover:not(:disabled) { transform:translateY(-3px) scale(1.05); }
+  .boss-attack-btn:disabled { opacity:0.3; cursor:not-allowed; transform:none; }
+  .boss-attack-btn .dmg-preview { font-family:'Nunito',sans-serif; font-size:0.7rem; display:block; opacity:0.8; }
+  .btn-basic-atk { background:rgba(255,68,68,0.15); color:#ff8888; border-color:#ff4444; }
+  .btn-special-atk { background:rgba(139,92,246,0.15); color:#c4b5fd; border-color:#7c3aed; }
+  .btn-xp-atk { background:rgba(255,214,10,0.1); color:var(--yellow); border-color:var(--yellow); }
+
+  /* Card hand */
+  .boss-hand-label { font-family:'Permanent Marker',cursive; color:rgba(245,240,232,0.45); font-size:0.75rem; letter-spacing:1px; text-align:center; margin-bottom:0.5rem; }
+  .boss-hand { display:flex; gap:0.7rem; justify-content:center; flex-wrap:wrap; margin-bottom:0.6rem; }
+  .attack-card {
+    width: 80px; background: linear-gradient(160deg,#1a0a0a,#2d0808);
+    border: 2px solid rgba(255,68,68,0.5); border-radius: 14px;
+    padding: 0.6rem 0.4rem; text-align:center; cursor:pointer;
+    transition: all 0.25s; position:relative; flex-shrink:0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  .attack-card:hover:not(.card-disabled) { transform:translateY(-10px) scale(1.08); box-shadow:0 12px 30px rgba(255,68,68,0.35); border-color:#ff4444; }
+  .attack-card.card-disabled { opacity:0.35; cursor:not-allowed; }
+  .attack-card.card-playing { animation: cardPlay 0.3s ease forwards; }
+  @keyframes cardPlay { 0%{transform:translateY(0) scale(1)} 50%{transform:translateY(-30px) scale(1.2) rotate(5deg)} 100%{transform:translateY(-80px) scale(0.5) rotate(15deg); opacity:0} }
+  .card-icon { font-size:1.6rem; display:block; margin-bottom:0.3rem; }
+  .card-name { font-family:'Permanent Marker',cursive; font-size:0.55rem; color:rgba(245,240,232,0.8); line-height:1.2; margin-bottom:0.3rem; }
+  .card-dmg { font-family:'Permanent Marker',cursive; font-size:0.75rem; color:#ff8888; }
+  .card-rarity-common   { border-color:rgba(255,68,68,0.4); }
+  .card-rarity-rare     { border-color:rgba(139,92,246,0.6); background:linear-gradient(160deg,#0d0a1a,#1a0d2e); }
+  .card-rarity-rarity-rare .card-dmg { color:#c4b5fd; }
+  .card-rarity-epic     { border-color:rgba(255,214,10,0.6); background:linear-gradient(160deg,#1a1500,#2d2400); }
+  .card-rarity-epic .card-dmg { color:var(--yellow); }
+
+  .deck-info { display:flex; justify-content:center; gap:1rem; margin-bottom:0.8rem; }
+  .deck-chip { font-size:0.75rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:50px; padding:0.25rem 0.8rem; color:rgba(245,240,232,0.5); font-family:'Permanent Marker',cursive; }
+
+  .boss-player-hp { display:flex; align-items:center; gap:0.8rem; background:rgba(0,0,0,0.3); border:1px solid rgba(16,185,129,0.2); border-radius:12px; padding:0.7rem 1rem; margin-bottom:0.8rem; }
+  .player-hp-bar-wrap { flex:1; background:rgba(0,0,0,0.4); border-radius:50px; height:14px; overflow:hidden; }
+  .player-hp-bar-fill { height:100%; border-radius:50px; background:linear-gradient(90deg,#065f46,#10b981); transition:width 0.4s ease; }
+
+  .boss-victory { text-align:center; padding:2rem 1rem; }
+  .boss-victory-title { font-family:'Permanent Marker',cursive; font-size:2.5rem; color:var(--yellow); text-shadow:0 0 40px rgba(255,214,10,0.6); margin-bottom:1rem; animation:bossPulse 1s ease infinite alternate; }
+  @keyframes bossPulse { from{transform:scale(1)} to{transform:scale(1.05)} }
+  .boss-locked-msg { text-align:center; padding:2rem; }
+  .boss-locked-msg .lock-icon { font-size:3rem; display:block; margin-bottom:1rem; }
+
+  /* Epic fullscreen victory */
+  .epic-victory-overlay {
+    position: fixed; inset: 0; z-index: 99999;
+    background: radial-gradient(ellipse at 50% 40%, #1a0a00 0%, #000 70%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    animation: epicVictoryIn 0.8s cubic-bezier(0.34,1.56,0.64,1);
+    overflow: hidden;
+  }
+  @keyframes epicVictoryIn { from{opacity:0; transform:scale(1.15)} to{opacity:1; transform:scale(1)} }
+
+  .epic-particles { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+  .epic-particle {
+    position:absolute; font-size:1.5rem;
+    animation: epicFloat linear infinite;
+  }
+  @keyframes epicFloat {
+    0%   { transform: translateY(110vh) rotate(0deg);   opacity: 1; }
+    100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+  }
+
+  .epic-title {
+    font-family: 'Permanent Marker', cursive;
+    font-size: clamp(2.5rem, 10vw, 5rem);
+    color: var(--yellow);
+    text-shadow: 0 0 60px rgba(255,214,10,0.9), 0 0 120px rgba(255,140,0,0.5);
+    animation: epicTitlePulse 1.2s ease infinite alternate;
+    text-align: center; margin-bottom: 0.5rem; z-index: 1;
+  }
+  @keyframes epicTitlePulse {
+    from { transform: scale(1);    text-shadow: 0 0 60px rgba(255,214,10,0.9); }
+    to   { transform: scale(1.06); text-shadow: 0 0 100px rgba(255,214,10,1), 0 0 200px rgba(255,140,0,0.7); }
+  }
+  .epic-subtitle {
+    font-family: 'Special Elite', cursive;
+    font-size: clamp(0.85rem, 3vw, 1.1rem);
+    color: rgba(245,240,232,0.7);
+    font-style: italic; text-align: center; max-width: 400px;
+    padding: 0 1.5rem; margin-bottom: 2rem; z-index: 1; line-height: 1.7;
+  }
+  .epic-reward {
+    font-family: 'Permanent Marker', cursive;
+    font-size: clamp(1rem, 4vw, 1.4rem);
+    color: var(--green);
+    text-shadow: 0 0 20px rgba(16,185,129,0.7);
+    margin-bottom: 2.5rem; z-index: 1;
+    animation: epicRewardPop 0.6s 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes epicRewardPop { from{opacity:0; transform:scale(0.3)} to{opacity:1; transform:scale(1)} }
+  .epic-restart-btn {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.1rem; padding: 1rem 2.5rem;
+    background: linear-gradient(135deg, #b91c1c, #7c3aed);
+    color: white; border: none; border-radius: 50px; cursor: pointer;
+    box-shadow: 0 0 30px rgba(185,28,28,0.6); z-index: 1;
+    transition: all 0.2s;
+    animation: epicRewardPop 0.6s 0.9s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  .epic-restart-btn:hover { transform: scale(1.08) translateY(-3px); box-shadow: 0 0 50px rgba(185,28,28,0.9); }
+
+  .dmg-float { position:fixed; font-family:'Permanent Marker',cursive; font-size:1.5rem; color:#ff4444; text-shadow:0 0 10px rgba(255,68,68,0.8); pointer-events:none; z-index:9999; animation:dmgFloat 1s ease forwards; }
+  @keyframes dmgFloat { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-80px) scale(1.4)} }
+  .heal-float { color:#44ff88; text-shadow:0 0 10px rgba(68,255,136,0.8); }
+
+  /* ===== CASINO ===== */
+  .casino-lobby { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+  @media(max-width:480px){ .casino-lobby { grid-template-columns: 1fr; } }
+
+  .casino-game-card {
+    background: linear-gradient(135deg, rgba(185,28,28,0.15), rgba(124,58,237,0.1));
+    border: 2px solid rgba(185,28,28,0.35);
+    border-radius: 20px; padding: 1.5rem; text-align: center;
+    position: relative; overflow: hidden; transition: all 0.3s;
+  }
+  .casino-game-card.unlocked { cursor: pointer; }
+  .casino-game-card.unlocked:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(185,28,28,0.3); border-color: rgba(185,28,28,0.7); }
+  .casino-game-card.locked { opacity: 0.6; }
+  .casino-game-icon { font-size: 3rem; display: block; margin-bottom: 0.7rem; }
+  .casino-game-title { font-family: 'Permanent Marker', cursive; font-size: 1.2rem; color: var(--chalk); margin-bottom: 0.4rem; }
+  .casino-game-desc { color: rgba(245,240,232,0.65); font-size: 0.85rem; margin-bottom: 1rem; line-height: 1.4; }
+  .casino-lock-badge { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; padding: 0.4rem 0.9rem; font-size: 0.8rem; color: rgba(245,240,232,0.5); font-weight: 700; }
+  .casino-play-badge { background: linear-gradient(135deg,#b91c1c,#7c3aed); border: none; border-radius: 50px; padding: 0.5rem 1.2rem; font-family: 'Permanent Marker', cursive; font-size: 0.9rem; color: white; cursor: pointer; transition: all 0.2s; }
+  .casino-play-badge:hover { transform: scale(1.05); box-shadow: 0 5px 15px rgba(185,28,28,0.4); }
+
+  .casino-xp-bar { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,214,10,0.2); border-radius: 14px; padding: 0.8rem 1.2rem; margin-bottom: 1.2rem; display: flex; align-items: center; justify-content: space-between; }
+  .casino-xp-label { font-family: 'Permanent Marker', cursive; color: var(--yellow); font-size: 1rem; }
+  .casino-xp-val { font-family: 'Permanent Marker', cursive; color: var(--yellow); font-size: 1.4rem; }
+
+  /* Unlock test overlay */
+  .unlock-test-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(6px);
+    z-index: 9000; display: flex; align-items: center; justify-content: center;
+    animation: panelIn 0.3s ease;
+  }
+  .unlock-test-box {
+    background: linear-gradient(135deg,#1a0a2e,#2d0808);
+    border: 2px solid rgba(185,28,28,0.5); border-radius: 24px;
+    padding: 2rem; max-width: 500px; width: 93%; max-height: 85vh; overflow-y: auto;
+  }
+  .unlock-test-title { font-family: 'Permanent Marker', cursive; color: var(--red); font-size: 1.4rem; margin-bottom: 0.3rem; }
+  .unlock-test-sub { font-family: 'Special Elite', cursive; color: rgba(245,240,232,0.7); font-size: 0.9rem; margin-bottom: 1.2rem; }
+
+  /* Blackjack */
+  .bj-table {
+    background: radial-gradient(ellipse at center, #14532d 0%, #052e16 100%);
+    border: 3px solid #86efac; border-radius: 24px; padding: 1.5rem;
+    margin-bottom: 1rem; position: relative;
+  }
+  .bj-section-label { font-family: 'Permanent Marker', cursive; font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0.6rem; opacity: 0.7; }
+  .bj-cards { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; min-height: 80px; align-items: center; }
+  .bj-card {
+    width: 52px; height: 74px; background: white; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; font-weight: 900; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    flex-direction: column; line-height: 1.1; border: 1px solid #e5e7eb;
+    animation: cardDeal 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .bj-card.red { color: #dc2626; }
+  .bj-card.black { color: #111827; }
+  .bj-card.hidden { background: linear-gradient(135deg,#1e3a5f,#0f2744); border-color: #3b82f6; }
+  .bj-card-val { font-size: 0.7rem; }
+  @keyframes cardDeal { from { opacity:0; transform: scale(0.5) rotate(-10deg); } to { opacity:1; transform: scale(1) rotate(0); } }
+  .bj-score { font-family: 'Permanent Marker', cursive; color: var(--yellow); font-size: 0.95rem; margin-bottom: 0.8rem; }
+  .bj-andrea-comment { font-family: 'Special Elite', cursive; color: #86efac; font-size: 0.9rem; font-style: italic; min-height: 1.4rem; margin-bottom: 0.5rem; }
+  .bj-actions { display: flex; gap: 0.7rem; flex-wrap: wrap; justify-content: center; margin-top: 0.8rem; }
+  .bj-btn { font-family: 'Permanent Marker', cursive; border: none; border-radius: 50px; padding: 0.7rem 1.5rem; cursor: pointer; font-size: 0.95rem; transition: all 0.2s; }
+  .bj-btn:hover { transform: scale(1.05); }
+  .bj-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .bj-btn-hit { background: var(--green); color: white; }
+  .bj-btn-stand { background: var(--red); color: white; }
+  .bj-btn-deal { background: linear-gradient(135deg,#b91c1c,#7c3aed); color: white; box-shadow: 0 5px 20px rgba(185,28,28,0.4); }
+  .bj-bet-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: center; margin-bottom: 1rem; }
+  .bj-bet-chip { font-family: 'Permanent Marker', cursive; border: 2px solid; border-radius: 50%; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+  .bj-bet-chip:hover { transform: scale(1.15) translateY(-3px); }
+  .bj-bet-chip.c5 { background: rgba(16,185,129,0.2); border-color: var(--green); color: var(--green); }
+  .bj-bet-chip.c10 { background: rgba(59,130,246,0.2); border-color: var(--blue); color: var(--blue); }
+  .bj-bet-chip.c25 { background: rgba(139,92,246,0.2); border-color: var(--purple); color: var(--purple); }
+  .bj-bet-chip.c50 { background: rgba(255,59,59,0.2); border-color: var(--red); color: var(--red); }
+  .bj-bet-display { font-family: 'Permanent Marker', cursive; color: var(--yellow); font-size: 1.1rem; text-align: center; margin-bottom: 0.5rem; }
+  .bj-result-banner { font-family: 'Permanent Marker', cursive; font-size: 1.6rem; text-align: center; padding: 0.8rem; border-radius: 12px; margin: 0.8rem 0; animation: panelIn 0.4s ease; }
+  .bj-win  { background: rgba(16,185,129,0.2); color: var(--green); border: 2px solid var(--green); }
+  .bj-lose { background: rgba(255,59,59,0.2);  color: var(--red);   border: 2px solid var(--red); }
+  .bj-push { background: rgba(255,214,10,0.15); color: var(--yellow); border: 2px solid var(--yellow); }
+
+  /* Slot Machine */
+  .slot-machine {
+    background: linear-gradient(135deg, #1c1917, #292524);
+    border: 3px solid #f59e0b; border-radius: 24px; padding: 1.5rem;
+    text-align: center; margin-bottom: 1rem;
+  }
+  .slot-reels { display: flex; gap: 0.5rem; justify-content: center; margin: 1rem 0; }
+  .slot-reel {
+    width: 72px; height: 72px; background: rgba(0,0,0,0.4); border: 2px solid rgba(245,158,11,0.4);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-size: 2.2rem; transition: all 0.1s;
+  }
+  .slot-reel.spinning { animation: reelSpin 0.1s linear infinite; border-color: var(--yellow); box-shadow: 0 0 15px rgba(245,158,11,0.5); }
+  @keyframes reelSpin { 0%{transform:scaleY(1)} 50%{transform:scaleY(0.8)} 100%{transform:scaleY(1)} }
+  .slot-bet-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: center; margin-bottom: 0.8rem; }
+  .slot-result-msg { font-family: 'Permanent Marker', cursive; font-size: 1.3rem; min-height: 2rem; margin: 0.5rem 0; }
+  .slot-payline { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 0.8rem; margin-top: 0.8rem; }
+  .slot-payline-title { font-family: 'Permanent Marker', cursive; color: var(--yellow); font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .slot-payline-row { display: flex; justify-content: space-between; color: rgba(245,240,232,0.65); font-size: 0.8rem; padding: 0.2rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .slot-payline-row:last-child { border-bottom: none; }
+
+  /* PANELS */
+  .panel { display: none; position: relative; z-index: 10; padding: 0 1rem 3rem; max-width: 800px; margin: 0 auto; }
+  .panel.active { display: block; animation: panelIn 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes panelIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* ANDREA SPEECH */
+  .andrea-speech {
+    background: rgba(255,255,255,0.05); border: 2px solid rgba(255,59,59,0.4);
+    border-radius: 20px; padding: 1.2rem 1.5rem; margin-bottom: 1.5rem;
+    backdrop-filter: blur(10px);
+  }
+  .andrea-speech::before {
+    content: '👩‍🏫 Andrea:'; font-family: 'Permanent Marker',cursive;
+    color: var(--red); display: block; margin-bottom: 0.5rem; font-size: 1.1rem;
+  }
+  .andrea-speech p { color: var(--chalk); font-size: 1.05rem; line-height: 1.5; font-family: 'Special Elite',cursive; }
+
+  .section-title { font-family: 'Permanent Marker',cursive; color: var(--chalk); font-size: 1.5rem; margin-bottom: 1rem; }
+
+  /* QUESTION CARD */
+  .question-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
+    border: 2px solid rgba(255,255,255,0.15); border-radius: 20px;
+    padding: 1.5rem; margin-bottom: 1rem; backdrop-filter: blur(10px);
+  }
+  .question-number { font-family: 'Permanent Marker',cursive; color: var(--yellow); font-size: 0.9rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 2px; }
+  .question-text   { color: var(--chalk); font-size: 1.1rem; margin-bottom: 1rem; font-weight: 700; }
+  .answer-input {
+    width: 100%; background: rgba(255,255,255,0.08);
+    border: 2px solid rgba(255,255,255,0.2); border-radius: 12px;
+    padding: 0.8rem 1rem; color: var(--chalk);
+    font-family: 'Nunito',sans-serif; font-size: 1rem; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .answer-input:focus { border-color: var(--yellow); box-shadow: 0 0 15px rgba(255,214,10,0.3); }
+  .answer-input.correct { border-color: var(--green) !important; background: rgba(16,185,129,0.1); }
+  .answer-input.wrong   { border-color: var(--red)   !important; background: rgba(255,59,59,0.1); animation: shake 0.3s ease; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+  .answer-feedback { font-size: 0.9rem; margin-top: 0.5rem; font-weight: 700; display: none; }
+  .answer-feedback.visible { display: block; }
+  .answer-feedback.correct-fb { color: var(--green); }
+  .answer-feedback.wrong-fb   { color: var(--red); }
+
+  .diff-badge { display: inline-block; padding: 0.2rem 0.7rem; border-radius: 50px; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.7rem; }
+  .diff-easy   { background: rgba(16,185,129,0.2); color: var(--green);  border: 1px solid var(--green); }
+  .diff-medium { background: rgba(255,214,10,0.2);  color: var(--yellow); border: 1px solid var(--yellow); }
+  .diff-hard   { background: rgba(255,59,59,0.2);   color: var(--red);    border: 1px solid var(--red); }
+
+  .btn-primary {
+    font-family: 'Permanent Marker',cursive; padding: 1rem 2rem;
+    border-radius: 50px; border: none; cursor: pointer; font-size: 1.1rem;
+    letter-spacing: 1px; transition: all 0.2s; display: block; margin: 1.5rem auto 0;
+  }
+  .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-red    { background: var(--red);    color: white;       box-shadow: 0 4px 15px rgba(255,59,59,0.4); }
+  .btn-yellow { background: var(--yellow); color: var(--dark); box-shadow: 0 4px 15px rgba(255,214,10,0.4); }
+  .btn-green  { background: var(--green);  color: white;       box-shadow: 0 4px 15px rgba(16,185,129,0.4); }
+  .btn-purple { background: var(--purple); color: white;       box-shadow: 0 4px 15px rgba(139,92,246,0.4); }
+
+  .score-display { text-align: center; padding: 2rem; background: rgba(255,255,255,0.05); border-radius: 20px; border: 2px solid rgba(255,214,10,0.3); margin-top: 1.5rem; display: none; }
+  .score-display.visible { display: block; animation: panelIn 0.5s ease; }
+  .score-number  { font-family: 'Permanent Marker',cursive; font-size: 4rem; line-height: 1; margin-bottom: 0.5rem; }
+  .score-comment { font-family: 'Special Elite',cursive; color: var(--chalk); font-size: 1.1rem; }
+
+  /* STORY */
+  .story-card {
+    background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(139,92,246,0.1));
+    border: 2px solid rgba(59,130,246,0.3); border-radius: 20px;
+    padding: 1.5rem; margin-bottom: 1rem; position: relative; transition: all 0.3s;
+  }
+  .story-card.unlocked { cursor: pointer; }
+  .story-card.unlocked:hover { transform: translateY(-5px); border-color: rgba(59,130,246,0.6); box-shadow: 0 15px 40px rgba(59,130,246,0.2); }
+  .story-card.locked    { opacity: 0.45; cursor: not-allowed; }
+  .story-card.completed { border-color: rgba(16,185,129,0.5); background: linear-gradient(135deg,rgba(16,185,129,0.08),rgba(59,130,246,0.05)); cursor: default; opacity: 0.75; }
+  .story-card.completed:hover { transform: none; box-shadow: none; }
+  .story-card h3 { font-family: 'Permanent Marker',cursive; color: var(--blue); font-size: 1.3rem; margin-bottom: 0.5rem; }
+  .story-card p  { color: rgba(245,240,232,0.8); font-size: 0.95rem; line-height: 1.5; }
+  .story-done-msg { color: var(--green) !important; font-size: 0.85rem !important; margin-top: 0.5rem !important; font-weight: 700; }
+
+  .story-badge { display: inline-block; padding: 0.2rem 0.8rem; border-radius: 50px; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.6rem; }
+  .new-badge       { background: rgba(255,214,10,0.2);  color: var(--yellow); border: 1px solid var(--yellow); }
+  .locked-badge    { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.15); }
+  .completed-badge { background: rgba(16,185,129,0.2);  color: var(--green);  border: 1px solid var(--green); }
+
+  .story-content { background: rgba(255,255,255,0.03); border: 2px dashed rgba(255,255,255,0.15); border-radius: 20px; padding: 2rem; margin-top: 1.5rem; display: none; }
+  .story-content.visible { display: block; animation: panelIn 0.4s ease; }
+  .story-content p { color: var(--chalk); font-family: 'Special Elite',cursive; font-size: 1.05rem; line-height: 1.8; margin-bottom: 1rem; }
+
+  .choice-btn {
+    display: block; width: 100%;
+    background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 12px; padding: 0.9rem 1.2rem; color: var(--chalk);
+    font-family: 'Nunito',sans-serif; font-size: 1rem; font-weight: 700;
+    cursor: pointer; margin-bottom: 0.7rem; text-align: left; transition: all 0.2s;
+  }
+  .choice-btn:hover:not(:disabled) { background: rgba(59,130,246,0.2); border-color: var(--blue); transform: translateX(5px); }
+  .choice-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+
+  .story-end { text-align: center; padding: 1.5rem; border-radius: 16px; margin-top: 1.5rem; animation: panelIn 0.4s ease; }
+  .bad-end   { background: rgba(255,59,59,0.1);   border: 2px solid rgba(255,59,59,0.3); }
+  .ok-end    { background: rgba(255,214,10,0.08); border: 2px solid rgba(255,214,10,0.3); }
+  .best-end  { background: rgba(16,185,129,0.1);  border: 2px solid rgba(16,185,129,0.3); }
+  .end-icon  { font-size: 3rem; margin-bottom: 0.5rem; }
+  .end-title { font-family: 'Permanent Marker',cursive; font-size: 1.4rem; margin-bottom: 0.3rem; }
+  .end-sub   { font-family: 'Special Elite',cursive; color: rgba(245,240,232,0.8); font-size: 1rem; margin-bottom: 0.7rem; }
+  .end-xp    { font-family: 'Permanent Marker',cursive; color: var(--yellow); font-size: 1.1rem; margin-bottom: 1rem; }
+
+  .unlock-banner {
+    background: linear-gradient(135deg,rgba(16,185,129,0.25),rgba(59,130,246,0.15));
+    border: 2px solid var(--green); border-radius: 12px;
+    padding: 0.8rem 1.2rem; font-family: 'Permanent Marker',cursive;
+    color: var(--green); font-size: 1rem; margin: 0.8rem 0;
+    animation: unlockPop 0.6s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes unlockPop { from{opacity:0;transform:scale(0.7)} to{opacity:1;transform:scale(1)} }
+
+  /* UPGRADES */
+  .upgrade-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(210px,1fr)); gap: 1rem; margin-top: 1rem; }
+  .upgrade-card {
+    background: linear-gradient(135deg,rgba(139,92,246,0.1),rgba(255,110,180,0.1));
+    border: 2px solid rgba(139,92,246,0.3); border-radius: 20px;
+    padding: 1.3rem; text-align: center; transition: all 0.3s;
+  }
+  .upgrade-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(139,92,246,0.3); }
+  .upgrade-icon { font-size: 2.5rem; display: block; margin-bottom: 0.7rem; }
+  .upgrade-name { font-family: 'Permanent Marker',cursive; color: var(--chalk); font-size: 1rem; margin-bottom: 0.5rem; }
+  .upgrade-desc { color: rgba(245,240,232,0.7); font-size: 0.85rem; margin-bottom: 1rem; line-height: 1.4; }
+  .upgrade-cost { font-family: 'Permanent Marker',cursive; color: var(--yellow); font-size: 0.9rem; margin-bottom: 0.7rem; }
+  .upgrade-btn  { font-family: 'Permanent Marker',cursive; padding: 0.5rem 1rem; border-radius: 50px; border: none; cursor: pointer; font-size: 0.85rem; background: var(--purple); color: white; transition: all 0.2s; }
+  .upgrade-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 5px 15px rgba(139,92,246,0.5); }
+  .upgrade-btn.owned       { background: var(--green); cursor: default; }
+  .upgrade-btn.cant-afford { background: #555; cursor: not-allowed; opacity: 0.6; }
+
+  /* ORAL */
+  .oral-container { text-align: center; padding: 2rem 0; }
+  .andrea-talk { width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg,#c0392b,#e74c3c); display: flex; align-items: center; justify-content: center; font-size: 4rem; margin: 0 auto 1.5rem; box-shadow: 0 0 40px rgba(255,59,59,0.4); animation: teacherFloat 2s ease-in-out infinite; }
+  .oral-question-box { background: rgba(255,255,255,0.05); border: 3px solid var(--red); border-radius: 20px; padding: 2rem; margin-bottom: 1.5rem; }
+  .oral-question-box h3 { font-family: 'Permanent Marker',cursive; color: var(--red); font-size: 1rem; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 3px; }
+  .oral-question { font-family: 'Special Elite',cursive; color: var(--chalk); font-size: 1.3rem; line-height: 1.5; }
+  .timer-ring { width: 100px; height: 100px; margin: 1.5rem auto; position: relative; }
+  .timer-ring svg { transform: rotate(-90deg); }
+  .timer-ring circle { fill: none; stroke-width: 8; stroke-linecap: round; }
+  .timer-bg       { stroke: rgba(255,255,255,0.1); }
+  .timer-progress { stroke: var(--red); stroke-dasharray: 283; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+  .timer-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Permanent Marker',cursive; font-size: 1.8rem; color: var(--chalk); }
+  .oral-options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 1rem; }
+  .oral-option { background: rgba(255,255,255,0.07); border: 2px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 1rem; color: var(--chalk); font-family: 'Nunito',sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center; }
+  .oral-option:hover:not(:disabled) { transform: scale(1.03); border-color: var(--blue); background: rgba(59,130,246,0.15); }
+  .oral-option:disabled { cursor: default; }
+  .oral-option.correct-choice { background: rgba(16,185,129,0.3); border-color: var(--green); }
+  .oral-option.wrong-choice   { background: rgba(255,59,59,0.3);   border-color: var(--red); animation: shake 0.3s ease; }
+
+  /* NOTIFICATION */
+  .notification { position: fixed; top: 20px; right: 20px; padding: 1rem 1.5rem; border-radius: 15px; font-family: 'Permanent Marker',cursive; font-size: 1rem; color: white; z-index: 9999; max-width: 280px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: notifIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+  @keyframes notifIn { from{opacity:0;transform:translateX(100px)} to{opacity:1;transform:translateX(0)} }
+  .notif-success { background: var(--green); }
+  .notif-fail    { background: var(--red); }
+  .notif-info    { background: var(--purple); }
+
+  @media (max-width:480px) {
+    .oral-options { grid-template-columns: 1fr; }
+    .upgrade-grid { grid-template-columns: 1fr; }
+  }
+
+  .save-chip { border-color: rgba(16,185,129,0.3); color: var(--green); transition: all 0.3s; }
+  .save-chip.flash { background: rgba(16,185,129,0.25); border-color: var(--green); transform: scale(1.1); }
+  .reset-chip {
+    border-color: rgba(255,59,59,0.3); color: rgba(255,100,100,0.8);
+    background: rgba(255,59,59,0.07); cursor: pointer; font-family: 'Nunito', sans-serif;
+    font-size: inherit; transition: all 0.2s;
+  }
+  .reset-chip:hover { background: rgba(255,59,59,0.2); border-color: var(--red); color: var(--red); }
+
+  /* ===== RANDOM EVENT ===== */
+  .event-card {
+    background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(251,191,36,0.05));
+    border: 2px solid rgba(245,158,11,0.35);
+    border-radius: 20px; padding: 1.5rem; margin-bottom: 1rem;
+    text-align: center; position: relative; overflow: hidden;
+  }
+  .event-icon { font-size: 4rem; display: block; margin-bottom: 0.7rem;
+    animation: teacherFloat 2s ease-in-out infinite; }
+  .event-name { font-family: 'Permanent Marker', cursive; font-size: 1.6rem;
+    margin-bottom: 0.5rem; }
+  .event-desc { font-family: 'Special Elite', cursive; color: rgba(245,240,232,0.85);
+    font-size: 1rem; line-height: 1.6; margin-bottom: 1.2rem; }
+  .event-effect-good { color: var(--green); }
+  .event-effect-bad  { color: var(--red); }
+  .event-effect-wild { color: #f59e0b; }
+
+  .spin-btn {
+    font-family: 'Permanent Marker', cursive;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: white; border: none; border-radius: 50px;
+    padding: 1rem 2.5rem; font-size: 1.2rem; cursor: pointer;
+    transition: all 0.2s; box-shadow: 0 5px 25px rgba(245,158,11,0.4);
+    display: block; margin: 0 auto;
+  }
+  .spin-btn:hover { transform: scale(1.05) translateY(-3px); }
+  .spin-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .slot-display {
+    font-size: 4rem; text-align: center; padding: 1.5rem;
+    background: rgba(255,255,255,0.04); border-radius: 20px;
+    border: 2px dashed rgba(245,158,11,0.3); margin-bottom: 1.5rem;
+    min-height: 100px; display: flex; align-items: center; justify-content: center;
+    animation: none;
+  }
+  .slot-display.spinning { animation: slotSpin 0.08s linear infinite; }
+  @keyframes slotSpin {
+    0%   { transform: scaleY(1); }
+    50%  { transform: scaleY(0.85); }
+    100% { transform: scaleY(1); }
+  }
+
+  #anger-warning-popup {
+    position: fixed; inset: 0;
+    background: rgba(255,59,59,0.2);
+    backdrop-filter: blur(5px);
+    z-index: 99998;
+    display: flex; align-items: center; justify-content: center;
+    animation: panelIn 0.3s ease;
+  }
+  .aw-inner {
+    background: linear-gradient(135deg, #1a0505, #2d0808);
+    border: 3px solid var(--red);
+    border-radius: 24px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    max-width: 360px; width: 90%;
+    box-shadow: 0 0 60px rgba(255,59,59,0.5), 0 20px 60px rgba(0,0,0,0.6);
+    animation: shake 0.5s ease;
+  }
+  .aw-icon { font-size: 3.5rem; margin-bottom: 0.5rem; }
+  .aw-title {
+    font-family: 'Permanent Marker', cursive;
+    color: var(--red); font-size: 2rem; margin-bottom: 0.8rem;
+    text-shadow: 0 0 20px rgba(255,59,59,0.8);
+  }
+  .aw-msg {
+    font-family: 'Special Elite', cursive;
+    color: var(--chalk); font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem;
+  }
+  .aw-msg strong { color: var(--red); }
+  .aw-btn {
+    font-family: 'Permanent Marker', cursive;
+    background: var(--red); color: white; border: none;
+    border-radius: 50px; padding: 0.8rem 2rem; font-size: 1rem;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .aw-btn:hover { transform: scale(1.05); box-shadow: 0 5px 20px rgba(255,59,59,0.5); }
+
+  /* ===== ANDREA KILLS OVERLAY ===== */
+  #andrea-kills-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.96);
+    z-index: 99999;
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeInDark 0.7s ease;
+  }
+  @keyframes fadeInDark { from { opacity:0; } to { opacity:1; } }
+  .ak-box { text-align: center; padding: 2rem; max-width: 440px; width: 90%; }
+  .ak-avatar {
+    font-size: 6rem; display: block; margin-bottom: 1rem;
+    animation: teacherFloat 1.5s ease-in-out infinite, killPulse 0.6s ease-in-out infinite alternate;
+  }
+  @keyframes killPulse {
+    from { filter: none; }
+    to { filter: drop-shadow(0 0 25px rgba(255,0,0,1)); }
+  }
+  .ak-title {
+    font-family: 'Permanent Marker', cursive;
+    font-size: clamp(2rem, 8vw, 3.5rem);
+    color: var(--red);
+    text-shadow: 0 0 30px rgba(255,59,59,0.9), 0 0 70px rgba(255,59,59,0.4);
+    margin-bottom: 1rem; line-height: 1.1;
+  }
+  .ak-quote {
+    font-family: 'Special Elite', cursive;
+    color: rgba(245,240,232,0.85); font-size: 1.1rem; line-height: 1.7;
+    margin-bottom: 1.5rem; padding: 1rem 1.5rem;
+    border-left: 4px solid var(--red); text-align: left;
+    background: rgba(255,59,59,0.05); border-radius: 0 12px 12px 0;
+  }
+  .ak-meter {
+    font-family: 'Permanent Marker', cursive;
+    color: var(--red); font-size: 1.4rem; margin-bottom: 2rem;
+    animation: bounce 0.4s ease-in-out infinite alternate;
+  }
+  .ak-btn {
+    font-family: 'Permanent Marker', cursive;
+    background: linear-gradient(135deg, var(--red), #c0392b);
+    color: white; border: none; border-radius: 50px;
+    padding: 1rem 2.5rem; font-size: 1.1rem; cursor: pointer;
+    transition: all 0.2s; box-shadow: 0 5px 25px rgba(255,59,59,0.4);
+  }
+  .ak-btn:hover { transform: scale(1.05) translateY(-3px); box-shadow: 0 10px 35px rgba(255,59,59,0.7); }
+  /* ===== UPDATE POPUP v2.0 ===== */
+  .update-popup-bg {
+    position: fixed; inset: 0; z-index: 999998;
+    background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    animation: updateBgIn 0.4s ease;
+    padding: 1rem;
+  }
+  @keyframes updateBgIn { from{opacity:0} to{opacity:1} }
+
+  .update-popup {
+    background: linear-gradient(135deg, #0d0015 0%, #150005 40%, #0d0015 100%);
+    border: 3px solid transparent;
+    border-radius: 28px;
+    padding: 0; max-width: 480px; width: 100%;
+    position: relative; overflow: hidden;
+    animation: updatePopIn 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 0 80px rgba(255,0,200,0.4), 0 0 160px rgba(0,200,255,0.2);
+  }
+  @keyframes updatePopIn { from{opacity:0;transform:scale(0.4) rotate(-8deg)} to{opacity:1;transform:scale(1) rotate(0)} }
+
+  /* Rainbow border animation */
+  .update-popup::before {
+    content:''; position:absolute; inset:-3px; border-radius:30px; z-index:-1;
+    background: linear-gradient(90deg, #ff0080,#ff6600,#ffff00,#00ff88,#00ccff,#8800ff,#ff0080);
+    background-size: 300% 300%;
+    animation: rainbowBorder 2s linear infinite;
+  }
+  @keyframes rainbowBorder { 0%{background-position:0% 50%} 100%{background-position:300% 50%} }
+
+  /* Scanlines overlay */
+  .update-popup::after {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:10;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px);
+    border-radius:28px;
+  }
+
+  .update-popup-inner { padding: 2rem 1.8rem; position:relative; z-index:5; }
+
+  .update-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #ff0080, #ff6600);
+    color: white; font-family:'Permanent Marker',cursive;
+    font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase;
+    padding: 0.3rem 1rem; border-radius: 50px; margin-bottom: 0.8rem;
+    box-shadow: 0 0 20px rgba(255,0,128,0.6);
+    animation: badgePulse 1s ease infinite alternate;
+  }
+  @keyframes badgePulse { from{box-shadow:0 0 20px rgba(255,0,128,0.6)} to{box-shadow:0 0 40px rgba(255,0,128,1), 0 0 60px rgba(255,102,0,0.5)} }
+
+  .update-version {
+    font-family: 'Permanent Marker', cursive;
+    font-size: clamp(3rem, 12vw, 4.5rem);
+    line-height: 1;
+    background: linear-gradient(135deg, #ff0080, #ff6600, #ffff00);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 20px rgba(255,100,0,0.8));
+    animation: versionWobble 0.8s ease infinite alternate;
+    display: block; margin-bottom: 0.2rem;
+  }
+  @keyframes versionWobble {
+    from { transform: skewX(-3deg) scale(1);   filter: drop-shadow(0 0 15px rgba(255,100,0,0.8)); }
+    to   { transform: skewX(3deg)  scale(1.04); filter: drop-shadow(0 0 35px rgba(255,200,0,1)); }
+  }
+
+  .update-title {
+    font-family: 'Permanent Marker', cursive; font-size: 0.9rem; letter-spacing: 2px;
+    color: rgba(245,240,232,0.5); text-transform: uppercase; margin-bottom: 1.5rem;
+  }
+
+  .update-features { list-style: none; padding: 0; margin: 0 0 1.8rem; display: flex; flex-direction: column; gap: 0.7rem; }
+  .update-feature {
+    display: flex; align-items: flex-start; gap: 0.8rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 0.75rem 1rem;
+    animation: featureSlideIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+    transition: all 0.2s;
+  }
+  .update-feature:hover { background: rgba(255,255,255,0.07); transform: translateX(4px); }
+  .update-feature:nth-child(1) { animation-delay: 0.15s; border-color: rgba(255,68,68,0.3); }
+  .update-feature:nth-child(2) { animation-delay: 0.25s; border-color: rgba(139,92,246,0.3); }
+  .update-feature:nth-child(3) { animation-delay: 0.35s; border-color: rgba(245,158,11,0.3); }
+  .update-feature:nth-child(4) { animation-delay: 0.45s; border-color: rgba(16,185,129,0.3); }
+  .update-feature:nth-child(5) { animation-delay: 0.55s; border-color: rgba(0,255,65,0.3); }
+  @keyframes featureSlideIn { from{opacity:0;transform:translateX(-30px)} to{opacity:1;transform:translateX(0)} }
+
+  .update-feature-icon { font-size: 1.6rem; flex-shrink:0; filter: drop-shadow(0 0 8px currentColor); }
+  .update-feature-text { flex: 1; }
+  .update-feature-name { font-family:'Permanent Marker',cursive; font-size:0.95rem; color:var(--chalk); margin-bottom:0.15rem; }
+  .update-feature-desc { font-size: 0.78rem; color: rgba(245,240,232,0.5); line-height:1.4; }
+
+  .update-close-btn {
+    width: 100%; font-family: 'Permanent Marker', cursive; font-size: 1.1rem;
+    padding: 1rem; border: none; border-radius: 50px; cursor: pointer;
+    background: linear-gradient(135deg, #ff0080, #ff6600, #ffff00);
+    color: #0d0015; font-weight: 900;
+    box-shadow: 0 0 30px rgba(255,0,128,0.5), 0 0 60px rgba(255,100,0,0.3);
+    transition: all 0.2s;
+    animation: featureSlideIn 0.4s 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+    position: relative; overflow: hidden;
+  }
+  .update-close-btn::before {
+    content:''; position:absolute; inset:0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transform: translateX(-100%);
+    animation: btnShine 2s 1.5s ease infinite;
+  }
+  @keyframes btnShine { 0%{transform:translateX(-100%)} 50%,100%{transform:translateX(100%)} }
+  .update-close-btn:hover { transform: scale(1.04) translateY(-2px); box-shadow: 0 0 50px rgba(255,0,128,0.8), 0 0 100px rgba(255,100,0,0.5); }
+
+  /* Floating emojis behind popup */
+  .update-floater {
+    position: fixed; font-size: 1.8rem; pointer-events:none; z-index:999997;
+    animation: floaterAnim linear infinite;
+  }
+  @keyframes floaterAnim {
+    0%   { transform: translateY(100vh) rotate(0deg);   opacity:0.6; }
+    100% { transform: translateY(-10vh) rotate(540deg); opacity:0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="emoji-bg-container"></div>
+
+<div class="stats-bar">
+  <div class="stat-chip"><span>⭐</span><span class="stat-val" id="stat-xp">0</span><span class="stat-lbl">XP</span></div>
+  <div class="stat-chip"><span>😤</span><span class="stat-val" id="stat-anger">10%</span><span class="stat-lbl">Hnev</span></div>
+  <div class="stat-chip"><span>📝</span><span class="stat-val" id="stat-tests">0</span><span class="stat-lbl">Testov</span></div>
+  <div class="stat-chip"><span>💀</span><span class="stat-val" id="stat-fails">0</span><span class="stat-lbl">Fails</span></div>
+  <div class="stat-chip save-chip" id="save-indicator" title="Progress sa ukladá automaticky">💾 <span class="stat-lbl">Uložené</span></div>
+  <button class="stat-chip reset-chip" onclick="confirmReset()" title="Vymazať celý progress">🗑️ <span class="stat-lbl">Reset</span></button>
+</div>
+
+<header>
+  <div class="teacher-avatar" id="teacher-avatar">👩‍🏫</div>
+  <h1 class="site-title">ANDREA LEHKÁ<br>SIMULÁTOR</h1>
+  <p class="subtitle">⚠️ Short testy každý deň ⚠️</p>
+  <div class="anger-bar-container">
+    <div class="anger-label"><span>Andrei hnev:</span><span id="anger-pct">10%</span></div>
+    <div class="anger-bar"><div class="anger-fill" id="anger-fill" style="width:10%"></div></div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="short-test">📝 Short Test</button>
+  <button class="tab-btn" data-tab="story">📖 Story Mode</button>
+  <button class="tab-btn" data-tab="upgrade">⬆️ Upgrady</button>
+  <button class="tab-btn" data-tab="oral">🎤 Oral Exam</button>
+  <button class="tab-btn" data-tab="random">🎰 Random Event</button>
+  <button class="tab-btn" data-tab="casino">🃏 Automaty</button>
+  <button class="tab-btn" data-tab="boss">💀 Boss Fight</button>
+</div>
+
+<!-- SHORT TEST -->
+<div class="panel active" id="panel-short-test">
+  <div class="andrea-speech"><p id="andrea-quote">Takže... dnes máme SHORT TEST. Neviem prečo sa čudujete, hovorila som to MINULÝ TÝŽDEŇ.</p></div>
+  <div id="test-selector">
+    <p class="section-title">🗂️ Vyber test</p>
+    <div id="test-list"></div>
+  </div>
+  <div id="test-active" style="display:none;">
+    <div id="test-timer-bar" style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);border:2px solid rgba(255,59,59,0.3);border-radius:16px;padding:0.8rem 1.2rem;margin-bottom:1.2rem;">
+      <span style="font-family:'Permanent Marker',cursive;color:rgba(245,240,232,0.7);font-size:0.95rem">⏱️ Čas:</span>
+      <span id="test-timer-display" style="font-family:'Permanent Marker',cursive;color:var(--yellow);font-size:1.5rem;letter-spacing:2px">2:00</span>
+      <div style="flex:1;margin:0 1rem;background:rgba(255,255,255,0.1);border-radius:50px;height:10px;overflow:hidden;">
+        <div id="test-timer-fill" style="height:100%;background:linear-gradient(90deg,#10B981,#FFD60A,#FF3B3B);border-radius:50px;transition:width 1s linear;width:100%"></div>
+      </div>
+    </div>
+    <div id="questions-container"></div>
+    <button class="btn-primary btn-red" id="submit-btn">📬 Odovzdať test</button>
+  </div>
+  <div class="score-display" id="score-display">
+    <div class="score-number" id="score-number">—</div>
+    <div class="score-comment" id="score-comment"></div>
+    <button class="btn-primary btn-yellow" id="next-test-btn" style="margin-top:1.5rem">🔄 Ďalší test</button>
+  </div>
+</div>
+
+<!-- STORY -->
+<div class="panel" id="panel-story">
+  <p class="section-title">📖 Príbehový mód</p>
+  <p style="color:rgba(245,240,232,0.6);margin-bottom:1.5rem;font-size:0.95rem">Prežiješ školský deň s Andreou? Každá správna voľba ťa posúva ďalej...</p>
+  <div id="story-container"></div>
+  <div class="story-content" id="story-content"></div>
+</div>
+
+<!-- UPGRADE -->
+<div class="panel" id="panel-upgrade">
+  <p class="section-title">⬆️ Odomkni schopnosti</p>
+  <p style="color:rgba(245,240,232,0.6);margin-bottom:1rem;font-size:0.95rem">Použi XP na odomknutie bonusov. Andrea ich nenávidí.</p>
+  <p style="color:var(--yellow);font-family:'Permanent Marker',cursive;margin-bottom:1rem;font-size:1.1rem">💡 XP: <span id="upgrade-xp-display">0</span></p>
+  <div style="display:flex;gap:0.6rem;margin-bottom:1.2rem">
+    <button id="upg-tab-normal" onclick="switchUpgradeTab('normal')" style="flex:1;font-family:'Permanent Marker',cursive;font-size:0.9rem;padding:0.6rem 0.5rem;border-radius:12px;cursor:pointer;border:2px solid var(--purple);background:rgba(139,92,246,0.3);color:white;transition:all 0.2s">🎒 Normálne</button>
+    <button id="upg-tab-attack" onclick="switchUpgradeTab('attack')" style="flex:1;font-family:'Permanent Marker',cursive;font-size:0.9rem;padding:0.6rem 0.5rem;border-radius:12px;cursor:pointer;border:2px solid rgba(255,68,68,0.4);background:rgba(255,68,68,0.08);color:rgba(245,240,232,0.5);transition:all 0.2s">⚔️ Útoky (Boss)</button>
+  </div>
+  <div class="upgrade-grid" id="upgrade-grid"></div>
+</div>
+
+<!-- ORAL -->
+<div class="panel" id="panel-oral">
+  <div class="oral-container">
+    <div class="andrea-talk">🗣️</div>
+    <p style="font-family:'Permanent Marker',cursive;color:var(--red);font-size:1.2rem;margin-bottom:0.5rem">ORAL EXAM TIME!</p>
+    <p style="color:rgba(245,240,232,0.7);margin-bottom:2rem;font-size:0.95rem">Odpovedaj rýchlo! Andrea nemá celý deň!</p>
+    <div id="oral-start"><button class="btn-primary btn-red" id="oral-start-btn">🎤 Začať Oral Exam</button></div>
+    <div id="oral-game" style="display:none;">
+      <div class="oral-question-box">
+        <h3>⏱️ Andrea sa pýta:</h3>
+        <div class="oral-question" id="oral-question-text">—</div>
+      </div>
+      <div class="timer-ring">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle class="timer-bg" cx="50" cy="50" r="45"/>
+          <circle class="timer-progress" id="timer-circle" cx="50" cy="50" r="45"/>
+        </svg>
+        <div class="timer-text" id="timer-text">10</div>
+      </div>
+      <div class="oral-options" id="oral-options"></div>
+    </div>
+    <div id="oral-result" style="display:none;">
+      <div class="score-display visible">
+        <div class="score-number" id="oral-score">—</div>
+        <div class="score-comment" id="oral-comment"></div>
+        <button class="btn-primary btn-green" id="oral-retry-btn" style="margin-top:1.5rem">🔄 Skúsiť znova</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RANDOM EVENT -->
+<div class="panel" id="panel-random">
+  <p class="section-title">🎰 Random Event</p>
+  <p style="color:rgba(245,240,232,0.6);margin-bottom:1.5rem;font-size:0.95rem">Andrea si pripravila prekvapenie. Zatoč a zisti čo ťa čaká pred ďalším testom!</p>
+  <div class="slot-display" id="slot-display">🎰</div>
+  <div class="event-card" id="event-result-card" style="display:none">
+    <span class="event-icon" id="event-icon">🎲</span>
+    <div class="event-name" id="event-name">—</div>
+    <div class="event-desc" id="event-desc">—</div>
+    <div id="event-effect-label" style="font-family:'Permanent Marker',cursive;font-size:1rem;margin-top:0.5rem"></div>
+  </div>
+  <button class="spin-btn" id="spin-btn">🎰 Zatočiť!</button>
+  <p style="color:rgba(245,240,232,0.4);font-size:0.8rem;text-align:center;margin-top:1rem" id="spin-cooldown"></p>
+</div>
+
+<!-- CASINO -->
+<div class="panel" id="panel-casino">
+  <p class="section-title">🃏 Automaty cez hodinu</p>
+  <p style="color:rgba(245,240,232,0.6);margin-bottom:0.8rem;font-size:0.95rem">Andrea si myslí že píšeš poznámky. V skutočnosti hráš kasíno. Odomkni hry splnením testu z angličtiny.</p>
+  <div class="casino-xp-bar">
+    <span class="casino-xp-label">💰 Tvoje XP (žetóny):</span>
+    <span class="casino-xp-val" id="casino-xp-display">0</span>
+  </div>
+  <div class="casino-lobby" id="casino-lobby"></div>
+  <div id="casino-blackjack" style="display:none"></div>
+  <div id="casino-slots" style="display:none"></div>
+</div>
+
+<!-- BOSS FIGHT -->
+<div class="panel" id="panel-boss">
+  <p class="section-title">💀 Andrea Boss Fight</p>
+  <div id="boss-locked-screen" style="display:none" class="boss-locked-msg">
+    <span class="lock-icon">🔒</span>
+    <p style="font-family:'Permanent Marker',cursive;color:var(--red);font-size:1.1rem">Boss Fight uzamknutý</p>
+    <p style="color:rgba(245,240,232,0.6);font-size:0.9rem;margin-top:0.5rem">Kúp aspoň 1 útok v sekcii Upgrady aby si mohol bojovať.</p>
+  </div>
+  <div id="boss-main-screen">
+    <div class="boss-arena">
+      <span class="boss-phase-badge phase-1" id="boss-phase-badge">⚡ Fáza 1</span>
+      <span class="boss-sprite" id="boss-sprite">👩‍🏫</span>
+      <div class="boss-name">ANDREA LEHKÁ</div>
+      <div class="boss-hp-bar-wrap">
+        <div class="boss-hp-bar-fill" id="boss-hp-fill" style="width:100%"></div>
+        <div class="boss-hp-text" id="boss-hp-text">750 / 750 HP</div>
+      </div>
+      <div class="boss-quote" id="boss-quote">Myslíš si, že ma porazíš? Najprv sprav môj test.</div>
+    </div>
+
+    <div class="boss-player-hp">
+      <span style="font-family:'Permanent Marker',cursive;color:var(--green);white-space:nowrap">❤️ Ty:</span>
+      <div class="player-hp-bar-wrap"><div class="player-hp-bar-fill" id="player-hp-fill" style="width:100%"></div></div>
+      <span style="font-family:'Permanent Marker',cursive;color:var(--green);font-size:0.85rem" id="player-hp-text">110/110</span>
+    </div>
+
+    <div class="boss-attack-log" id="boss-log"><div class="boss-log-entry event">⚔️ Boj začal. Andrea ťa nenávidí.</div></div>
+
+    <div class="deck-info">
+      <div class="deck-chip">🃏 Balíček: <span id="deck-count">0</span></div>
+      <div class="deck-chip">♻️ Odpad: <span id="discard-count">0</span></div>
+    </div>
+    <div class="boss-hand-label">— TVOJA RUKA — zahraj kartu —</div>
+    <div class="boss-hand" id="boss-hand"></div>
+
+    <div style="text-align:center;margin-top:0.8rem">
+      <button onclick="resetBossFight()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:rgba(245,240,232,0.4);border-radius:50px;padding:0.4rem 1rem;cursor:pointer;font-size:0.8rem;font-family:'Nunito',sans-serif">🔄 Reštartovať boj</button>
+    </div>
+  </div>
+  <div id="boss-victory-screen" style="display:none"></div>
+</div>
+
+<script>
+const DEFAULT_STATE = {
+  xp: 0, angerLevel: 10, testsCompleted: 0, fails: 0,
+  ownedUpgrades: [], currentTest: null,
+  completedStories: [], unlockedStories: [1],
+  warned90: false, dead: false, unlockedCasino: [],
+  xpPenalty: false, doubleangerDay: false,
+};
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('andrea_simulator_save');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return Object.assign({}, DEFAULT_STATE, parsed);
+    }
+  } catch(e) {}
+  return Object.assign({}, DEFAULT_STATE);
+}
+
+function saveState() {
+  try {
+    const toSave = Object.assign({}, state);
+    toSave.currentTest = null;
+    localStorage.setItem('andrea_simulator_save', JSON.stringify(toSave));
+    // Flash save indicator
+    const chip = document.getElementById('save-indicator');
+    if (chip) {
+      chip.classList.add('flash');
+      setTimeout(() => chip.classList.remove('flash'), 600);
+    }
+  } catch(e) {}
+}
+
+const state = loadState();
+
+// ===================== DATA =====================
+const andreaQuotes = [
+  "Takže... dnes máme SHORT TEST. Neviem prečo sa čudujete, hovorila som to MINULÝ TÝŽDEŇ.",
+  "Pripravte pero a papier. Máte 5 minút. A áno, píšem to do katalógu.",
+  "Toto je DOUBLE short test dnes. Kto mal byť pripravený, ten je pripravený.",
+  "Pst! Ticho! Toto je test, nie diskusia. Zero talking.",
+  "Chýba vám pero? To je váš problém, nie môj.",
+  "SHORT TEST zo včerajšieho učiva. Kto neučil, to mi nevravte.",
+  "Áno, TRIPLE short test. Pretože minule ste nedávali pozor.",
+  "Kto nedokončí, dostane jednotku. Jednoduché pravidlá.",
+];
+
+// Každý test má veľký pool otázok — pri každom spustení sa náhodne vyberú 5
+const testPools = [
+  {
+    id:1, title:"Short Test #1", subtitle:"Present Simple vs Continuous", difficulty:"easy",
+    pool:[
+      {q:"She ___ (read) a book right now.",                    answer:"is reading",        hint:"is reading / reads"},
+      {q:"Every morning, he ___ (drink) coffee.",               answer:"drinks",            hint:"drinks / is drinking"},
+      {q:"They ___ (not/watch) TV at the moment.",              answer:"are not watching",  hint:"are not watching / don't watch"},
+      {q:"Where ___ you ___ (go) right now?",                   answer:"are going",         hint:"are going / go"},
+      {q:"She usually ___ (take) the bus.",                     answer:"takes",             hint:"takes / is taking"},
+      {q:"I ___ (not/understand) what you ___ (say) right now.",answer:"don't understand",  hint:"don't understand / am not understanding"},
+      {q:"Listen! Someone ___ (knock) at the door.",            answer:"is knocking",       hint:"is knocking / knocks"},
+      {q:"He ___ (play) football every Saturday.",              answer:"plays",             hint:"plays / is playing"},
+      {q:"We ___ (study) for the test right now.",              answer:"are studying",      hint:"are studying / study"},
+      {q:"The sun ___ (rise) in the east.",                     answer:"rises",             hint:"rises / is rising"},
+      {q:"They ___ (have) lunch at the moment.",                answer:"are having",        hint:"are having / have"},
+      {q:"She ___ (always/forget) her keys.",                   answer:"always forgets",    hint:"always forgets / is always forgetting"},
+      {q:"I ___ (not/like) spicy food.",                        answer:"don't like",        hint:"don't like / am not liking"},
+      {q:"What ___ he ___ (do) right now?",                     answer:"is doing",          hint:"is doing / does"},
+      {q:"The train ___ (leave) every hour.",                   answer:"leaves",            hint:"leaves / is leaving"},
+    ]
+  },
+  {
+    id:2, title:"Short Test #2", subtitle:"Past Simple", difficulty:"medium",
+    pool:[
+      {q:"Yesterday, I ___ (go) to school.",                    answer:"went",              hint:"went / goed / go"},
+      {q:"She ___ (not/see) him last night.",                   answer:"did not see",       hint:"did not see / not saw"},
+      {q:"___ you ___ (study) for the test?",                   answer:"did study",         hint:"did study / studied"},
+      {q:"We ___ (have) a great time at the party.",            answer:"had",               hint:"had / have / haved"},
+      {q:"He ___ (buy) a new phone last week.",                 answer:"bought",            hint:"bought / buyed / buy"},
+      {q:"She ___ (wake) up late this morning.",                answer:"woke",              hint:"woke / waked / woken"},
+      {q:"They ___ (not/come) to the meeting yesterday.",       answer:"did not come",      hint:"did not come / not came"},
+      {q:"I ___ (write) a letter to my friend.",                answer:"wrote",             hint:"wrote / writed / write"},
+      {q:"He ___ (speak) to the teacher after class.",          answer:"spoke",             hint:"spoke / speaked / speak"},
+      {q:"We ___ (not/finish) the exam in time.",               answer:"did not finish",    hint:"did not finish / not finished"},
+      {q:"___ she ___ (call) you last night?",                  answer:"did call",          hint:"did call / called"},
+      {q:"They ___ (run) a marathon last year.",                answer:"ran",               hint:"ran / runned / run"},
+      {q:"I ___ (lose) my wallet on the bus.",                  answer:"lost",              hint:"lost / losed / lose"},
+      {q:"She ___ (tell) me the truth finally.",                answer:"told",              hint:"told / telled / tell"},
+      {q:"He ___ (not/eat) breakfast this morning.",            answer:"did not eat",       hint:"did not eat / not ate"},
+    ]
+  },
+  {
+    id:3, title:"DOUBLE Short Test", subtitle:"Mixed Tenses — Andrea's special edition", difficulty:"hard",
+    pool:[
+      {q:"By the time she arrived, I ___ (already/eat).",       answer:"had already eaten",   hint:"had already eaten"},
+      {q:"He ___ (work) here for 5 years.",                     answer:"has been working",    hint:"has been working"},
+      {q:"If I ___ (be) you, I would study more.",              answer:"were",                hint:"were / was"},
+      {q:"She ___ (just/leave) when you called.",               answer:"had just left",       hint:"had just left"},
+      {q:"By tomorrow, we ___ (finish) the project.",           answer:"will have finished",  hint:"will have finished"},
+      {q:"I ___ (never/see) such a mess before today.",         answer:"had never seen",      hint:"had never seen"},
+      {q:"She ___ (study) English since she was 7.",            answer:"has been studying",   hint:"has been studying"},
+      {q:"When I arrived, they ___ (already/leave).",           answer:"had already left",    hint:"had already left"},
+      {q:"By next week, I ___ (read) this book.",               answer:"will have read",      hint:"will have read"},
+      {q:"He ___ (not/finish) his homework when she called.",   answer:"had not finished",    hint:"had not finished"},
+      {q:"They ___ (live) here for three years now.",           answer:"have been living",    hint:"have been living"},
+      {q:"I realized I ___ (forget) my keys at home.",          answer:"had forgotten",       hint:"had forgotten / forgot"},
+      {q:"She ___ (work) all day and is very tired.",           answer:"has been working",    hint:"has been working"},
+      {q:"By the time you arrive, I ___ (cook) dinner.",        answer:"will have cooked",    hint:"will have cooked"},
+      {q:"He told me he ___ (never/be) to Paris.",              answer:"had never been",      hint:"had never been"},
+    ]
+  },
+];
+
+// Funkcia na náhodný výber 5 otázok z poolu
+function pickQuestions(pool) {
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, 5);
+}
+
+// Dynamicky vytvor testy s náhodne vybranými otázkami
+const tests = testPools.map(tp => ({
+  id: tp.id,
+  title: tp.title,
+  subtitle: tp.subtitle,
+  difficulty: tp.difficulty,
+  questions: pickQuestions(tp.pool),
+  _pool: tp.pool,
+}));
+
+const stories = [
+  {
+    id:1, day:1, title:"Den 1: Pondelok rano",
+    preview:"Prides do triedy. Andrea stoji pri tabuli s papiermi v ruke...",
+    unlocksNext:true,
+    steps:[
+      {
+        text:'Prides do triedy. Andrea stoji pri tabuli. "Dnes mame short test," hovori bez pozdravenia.\n\nCo urobis?',
+        choices:[
+          {text:"Zatvaras sa prekvapene a povies 'Ale vy ste nehovorili!'", outcome:"continue", next:1},
+          {text:"Ticho si sadnes a vytahnes pero",                          outcome:"continue", next:2},
+          {text:"Povies 'OK, som pripraveny/a'",                            outcome:"continue", next:3},
+        ]
+      },
+      {
+        text:'Andrea ta zmeria pohladom. "Naozaj? Hovorila som to piatok, stvrtok A stredu."\n\nCela trieda sa na teba pozrie.',
+        choices:[{text:"Sadnut si a mlcat", outcome:"end-bad", xp:2}]
+      },
+      {
+        text:"Dobra volba. Andrea si ta nevsimine. Dostaness test. Otazky su priemerne tazke.",
+        choices:[{text:"Odovzdat test a odist", outcome:"end-ok", xp:5}]
+      },
+      {
+        text:"Andrea sa na sekundu zastavi. Takmer sa usmiala. Takmer.\n\nSi jej tajny oblubeny student. Teda nie. Ale skoro.",
+        choices:[{text:"Odist s usmevom", outcome:"end-best", xp:10}]
+      }
+    ]
+  },
+  {
+    id:2, day:2, title:"Den 2: Utorok — TRIPLE Short Test",
+    preview:"Andrea vstupí do triedy s trojnasobnou zasobou papierov.",
+    unlocksNext:true,
+    steps:[
+      {
+        text:'Utorok. Vojde Andrea s hrubym stosom papierov.\n\n"Dnes mame TRIPLE short test. Tri testy, jeden po druhom. 15 minut celkovo."\n\nCo urobis?',
+        choices:[
+          {text:"'To nie je mozne, to je ilegalne!'",      outcome:"continue", next:1},
+          {text:"Rychlo si zopakovaz v hlave gramatiku",   outcome:"continue", next:2},
+          {text:"Opytass sa suseda na odpovede",           outcome:"continue", next:3},
+        ]
+      },
+      {
+        text:'Andrea sa zastavi. Pozrie sa na teba dlhym pomalym pohladom.\n\n"Mozne. A legalne. Sadni."',
+        choices:[{text:"Pisat v panike", outcome:"end-bad", xp:3}]
+      },
+      {
+        text:'V hlave ti preblesknú pravidla pre Present Perfect, Past Simple a Conditionals.\n\nAndrea: "Aspon niekto bol pripraveny."',
+        choices:[{text:"Odovzdat vsetky tri", outcome:"end-best", xp:15}]
+      },
+      {
+        text:'Sused ti sepne odpoved. Ale Andrea to vidi.\n\n"OBAJA. Nula. Katalog."',
+        choices:[{text:"Prezit hanbu", outcome:"end-bad", xp:1}]
+      }
+    ]
+  },
+  {
+    id:3, day:3, title:"Den 3: Streda — Oral Exam",
+    preview:"Dnes nie je short test. Dnes je nieco horsie. Andrea ma zoznam mien.",
+    unlocksNext:false,
+    steps:[
+      {
+        text:'Streda. Trieda je PRILIS ticha. Andrea vlozi na stol jeden papier — zoznam mien.\n\n"Dnes budeme mat oral exam. Vyvolam vas po jednom."\n\nCo urobis?',
+        choices:[
+          {text:"Schovas sa za kamarata a dufas",                       outcome:"continue", next:1},
+          {text:"Prihlasiss sa ako prvy/a — nech to mas za sebou",      outcome:"continue", next:2},
+          {text:"Povies ze ta boli hrdlo",                              outcome:"continue", next:3},
+        ]
+      },
+      {
+        text:'Schovas sa. Ale Andrea ma oci vsade. "Ty. Ano, ty za Matejom."\n\nOtazka: "Explain the difference between Present Perfect and Past Simple."',
+        choices:[
+          {text:"Vysvetlis to spravne",          outcome:"end-best", xp:15},
+          {text:"'Ehmm... obe su minuly cas?'",  outcome:"end-bad",  xp:2},
+        ]
+      },
+      {
+        text:'Andrea si ta zapise ako prveho. Otazka: "Give me three examples of irregular verbs."\n\nGo-went-gone. Take-took-taken. Be-was-been.\n\nAndrea prikyyne. Skoro neviditelne. Ale prikyyne.',
+        choices:[{text:"Sadnut si s hrdostou", outcome:"end-best", xp:15}]
+      },
+      {
+        text:'"Boli ta hrdlo." Nie je to otazka. Je to konstatovanie.\n\n"Tak napis odpovede na tabulu."',
+        choices:[
+          {text:"Napisess spravne odpovede", outcome:"end-ok",  xp:8},
+          {text:"Napisess nezmysly a dufas", outcome:"end-bad", xp:2},
+        ]
+      }
+    ]
+  }
+];
+
+const upgrades = [
+  {id:"extra-time",   icon:"⏰", name:"Extra Time",    desc:"Dostanes +2 minuty na kazdy short test",  cost:50},
+  {id:"hint-mode",    icon:"💡", name:"Hint Mode",     desc:"Vidis napovedu pri kazdej otazke",        cost:75},
+  {id:"anger-shield", icon:"🛡️", name:"Anger Shield", desc:"Andrei hnev rastie pomalssie",            cost:100},
+  {id:"double-xp",    icon:"⭐", name:"Double XP",     desc:"Za kazdy test dostanes 2x XP",            cost:150},
+  {id:"skip-test",    icon:"🏃", name:"Skip Pass",     desc:"Preskoc hociktory test každé 4 min a ziskaš plné XP",    cost:200},
+  {id:"essay-help",   icon:"📄", name:"Essay Helper",  desc:"AI pomoc pri essay testoch",              cost:300},
+  // Boss Fight útoky
+  {id:"dmg-papier",   icon:"📝", name:"Poznámkový lístok", desc:"Slabý útok — hodíš lístok Andrei na hlavu. Boss DMG: 35",  cost:80,  bossDmg:35},
+  {id:"dmg-pero",     icon:"✏️", name:"Pero do stola",     desc:"Stredný útok — pero zarazíš do stola. Boss DMG: 85",      cost:175, bossDmg:85},
+  {id:"dmg-katalog",  icon:"📋", name:"Roztrhnutý katalóg", desc:"Silný útok — roztrhneš katalóg. Boss DMG: 170",           cost:320, bossDmg:170},
+  {id:"dmg-kricanie", icon:"😡", name:"Výkrik triedy",      desc:"Ultimát — celá trieda kričí. Boss DMG: 340",              cost:550, bossDmg:340},
+];
+
+const oralQuestions = [
+  {q:"What is the past tense of 'go'?",                         options:["went","goed","gone","going"],                                                              correct:0},
+  {q:"Choose correct: 'She ___ reading now.'",                  options:["is","are","was","be"],                                                                    correct:0},
+  {q:"What does 'vocabulary' mean in Slovak?",                  options:["slovná zásoba","gramatika","pravopis","výslovnosť"],                                      correct:0},
+  {q:"Which sentence is correct?",                              options:["I have went","I have gone","I has gone","I gone"],                                         correct:1},
+  {q:"What tense: 'By tomorrow, I will have finished.'",        options:["Future Perfect","Future Simple","Present Perfect","Past Perfect"],                         correct:0},
+  {q:"'Difficult' is a synonym of...?",                         options:["hard","easy","simple","clear"],                                                           correct:0},
+  {q:"Which is NOT a modal verb?",                              options:["have","can","might","should"],                                                            correct:0},
+  {q:"Correct spelling?",                                       options:["necessary","neccesary","necesary","necessery"],                                           correct:0},
+  {q:"3rd conditional: 'If I ___ studied, I would have passed.'",options:["had","have","was","did"],                                                               correct:0},
+  {q:"'She has been working here ___ 5 years.'",                options:["for","since","during","from"],                                                            correct:0},
+  {q:"What is the plural of 'child'?",                           options:["children","childs","childen","childrens"],                                                 correct:0},
+  {q:"Choose the correct preposition: 'I'm good ___ English.'",  options:["at","in","on","with"],                                                                    correct:0},
+  {q:"Which is Past Perfect?",                                   options:["had gone","have gone","was going","went"],                                                 correct:0},
+  {q:"'She ___ to school yesterday.' — correct form of 'go'?",   options:["went","go","gone","goes"],                                                                correct:0},
+  {q:"What does 'although' mean in Slovak?",                     options:["hoci / aj keď","preto","kým","zatiaľ čo"],                                                correct:0},
+  {q:"Passive voice of 'They built the house.'",                 options:["The house was built","The house is built","The house built","The house were built"],       correct:0},
+  {q:"Which sentence uses reported speech correctly?",           options:["He said he was tired","He said he is tired","He told he was tired","He said he be tired"], correct:0},
+  {q:"'I ___ here since Monday.' — correct form?",               options:["have been","am","was","had been"],                                                        correct:0},
+  {q:"What is the superlative of 'good'?",                       options:["the best","the most good","the better","the goodest"],                                    correct:0},
+  {q:"Which word is an adverb?",                                 options:["quickly","quick","quicker","quickest"],                                                   correct:0},
+];
+
+// ===================== UTILS =====================
+function updateStats() {
+  document.getElementById('stat-xp').textContent        = state.xp;
+  document.getElementById('stat-anger').textContent     = state.angerLevel + '%';
+  document.getElementById('stat-tests').textContent     = state.testsCompleted;
+  document.getElementById('stat-fails').textContent     = state.fails;
+  document.getElementById('anger-fill').style.width     = state.angerLevel + '%';
+  document.getElementById('anger-pct').textContent      = state.angerLevel + '%';
+  document.getElementById('upgrade-xp-display').textContent = state.xp;
+  const cxp = document.getElementById('casino-xp-display');
+  if (cxp) cxp.textContent = state.xp;
+  saveState();
+
+  // 90% warning popup
+  if (state.angerLevel >= 90 && state.angerLevel < 100 && !state.warned90) {
+    state.warned90 = true;
+    showAngerWarning();
+  }
+  if (state.angerLevel < 90) state.warned90 = false;
+
+  // 100% = Andrea kills you
+  if (state.angerLevel >= 100 && !state.dead) {
+    state.dead = true;
+    setTimeout(showAndreaKills, 400);
+  }
+}
+
+function showAngerWarning() {
+  const old = document.getElementById('anger-warning-popup');
+  if (old) old.remove();
+  const popup = document.createElement('div');
+  popup.id = 'anger-warning-popup';
+  popup.innerHTML = `
+    <div class="aw-inner">
+      <div class="aw-icon">⚠️😤</div>
+      <div class="aw-title">POSLEDNÉ VAROVANIE!</div>
+      <div class="aw-msg">Andrea má <strong>90% hnevu</strong>.<br>Ešte jeden fail a si mŕtvy/á!</div>
+      <button class="aw-btn" onclick="document.getElementById('anger-warning-popup').remove()">Chápem... 😰</button>
+    </div>
+  `;
+  document.body.appendChild(popup);
+  setTimeout(() => { if (popup.parentNode) popup.remove(); }, 6000);
+}
+
+function showAndreaKills() {
+  const overlay = document.createElement('div');
+  overlay.id = 'andrea-kills-overlay';
+  overlay.innerHTML = `
+    <div class="ak-box">
+      <div class="ak-avatar">👩‍🏫</div>
+      <div class="ak-title">ANDREA ŤA ZABILA</div>
+      <div class="ak-quote">"Dostatok varovaní si mal/a.<br>Katalóg. Rodičia. Koniec."</div>
+      <div class="ak-meter">💀 HNEV: 100% 💀</div>
+      <button class="ak-btn" onclick="respawn()">🔄 Skúsiť znova (reset)</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function respawn() {
+  document.getElementById('andrea-kills-overlay').remove();
+  state.angerLevel = 10;
+  state.xp = 0;
+  state.testsCompleted = 0;
+  state.fails = 0;
+  state.completedStories = [];
+  state.unlockedStories = [1];
+  state.ownedUpgrades = [];
+  state.unlockedCasino = [];
+  state.xpPenalty = false;
+  state.doubleangerDay = false;
+  state.dead = false;
+  state.warned90 = false;
+  updateStats();
+  renderTests();
+  renderStories();
+  renderUpgrades();
+  showNotification('💀 Respawn! Začínaš odznova...', 'info');
+}
+
+function showNotification(msg, type) {
+  const n = document.createElement('div');
+  n.className = 'notification notif-' + type;
+  n.textContent = msg;
+  document.body.appendChild(n);
+  setTimeout(() => { n.style.transition='opacity 0.3s'; n.style.opacity='0'; setTimeout(()=>n.remove(),300); }, 2500);
+}
+
+window.confirmReset = function() {
+  const overlay = document.createElement('div');
+  overlay.id = 'confirm-reset-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(5px);z-index:99997;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:linear-gradient(135deg,#1a0a2e,#0d0620);border:2px solid rgba(255,59,59,0.5);border-radius:20px;padding:2rem;text-align:center;max-width:320px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+      <div style="font-size:3rem;margin-bottom:0.7rem">🗑️</div>
+      <div style="font-family:'Permanent Marker',cursive;color:var(--red);font-size:1.4rem;margin-bottom:0.7rem">Vymazať progress?</div>
+      <div style="font-family:'Special Elite',cursive;color:rgba(245,240,232,0.8);font-size:0.95rem;margin-bottom:1.5rem">Stratíš všetky XP, príbehy aj upgrady. Naozaj?</div>
+      <div style="display:flex;gap:0.8rem;justify-content:center;">
+        <button onclick="window.hardReset()" style="font-family:'Permanent Marker',cursive;background:var(--red);color:white;border:none;border-radius:50px;padding:0.7rem 1.5rem;cursor:pointer;font-size:0.95rem;">💀 Áno, reset</button>
+        <button onclick="document.getElementById('confirm-reset-overlay').remove()" style="font-family:'Permanent Marker',cursive;background:rgba(255,255,255,0.1);color:var(--chalk);border:2px solid rgba(255,255,255,0.2);border-radius:50px;padding:0.7rem 1.5rem;cursor:pointer;font-size:0.95rem;">❌ Zrušiť</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+};
+
+window.hardReset = function() {
+  localStorage.removeItem('andrea_simulator_save');
+  localStorage.removeItem('seen_update_v2');
+  const o = document.getElementById('confirm-reset-overlay');
+  if (o) o.remove();
+  // Quit any active test first
+  state.currentTest = null;
+  if (testTimerInterval) { clearInterval(testTimerInterval); testTimerInterval = null; }
+  document.getElementById('test-selector').style.display = 'block';
+  document.getElementById('test-active').style.display = 'none';
+  document.getElementById('score-display').classList.remove('visible');
+  const submitBtn = document.getElementById('submit-btn');
+  submitBtn.disabled = false;
+  submitBtn.textContent = '📬 Odovzdať test';
+  submitBtn.style.opacity = '1';
+  Object.assign(state, DEFAULT_STATE, { unlockedStories: [1], ownedUpgrades: [], completedStories: [], unlockedCasino: [] });
+  skipPassCooldownRemaining = 0;
+  if (skipPassCooldownInterval) { clearInterval(skipPassCooldownInterval); skipPassCooldownInterval = null; }
+  updateStats();
+  renderStories();
+  renderUpgrades();
+  renderTests();
+  showNotification('🗑️ Progress vymazaný. Začínaš odznova!', 'fail');
+  setTimeout(() => showUpdatePopup(), 600);
+};
+
+function randomQuote() {
+  document.getElementById('andrea-quote').textContent = andreaQuotes[Math.floor(Math.random()*andreaQuotes.length)];
+}
+
+// ===================== TABS =====================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    randomQuote();
+    // Stop oral timer and reset when leaving oral tab
+    if (btn.dataset.tab !== 'oral') {
+      clearInterval(oral.timer); oral.timer = null;
+      // If mid-game, reset back to start screen
+      if (document.getElementById('oral-game').style.display === 'block') {
+        document.getElementById('oral-game').style.display = 'none';
+        document.getElementById('oral-result').style.display = 'none';
+        document.getElementById('oral-start').style.display = 'block';
+      }
+    }
+    if (btn.dataset.tab === 'boss') initBossFight();
+  });
+});
+
+// ===================== SHORT TESTS =====================
+let skipPassCooldownInterval = null;
+let skipPassCooldownRemaining = 0;
+let testTimerInterval = null;
+let testTimerSeconds = 0;
+let testSubmitted = false;
+
+function renderTests() {
+  const container = document.getElementById('test-list');
+  container.innerHTML = '';
+
+  // Skip Pass UI
+  const hasSkip = state.ownedUpgrades.includes('skip-test');
+  if (hasSkip) {
+    const onCooldown = skipPassCooldownRemaining > 0;
+    const m = Math.floor(skipPassCooldownRemaining / 60);
+    const s = skipPassCooldownRemaining % 60;
+    const skipBanner = document.createElement('div');
+    skipBanner.style.cssText = 'background:rgba(16,185,129,0.1);border:2px solid rgba(16,185,129,0.3);border-radius:14px;padding:0.8rem 1.2rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;';
+    skipBanner.innerHTML = onCooldown
+      ? `<span style="font-family:'Permanent Marker',cursive;color:rgba(245,240,232,0.5);font-size:0.9rem">🏃 Skip Pass — cooldown <span id="skip-countdown">${m}:${String(s).padStart(2,'0')}</span></span>`
+      : `<span style="font-family:'Permanent Marker',cursive;color:var(--green);font-size:0.9rem">🏃 Skip Pass — dostupný! Stlač Skip pri teste.</span>`;
+    container.appendChild(skipBanner);
+  }
+
+  tests.forEach((t, idx) => {
+    const dc = {easy:'diff-easy', medium:'diff-medium', hard:'diff-hard'}[t.difficulty];
+    const dl = {easy:'Lahky', medium:'Stredny', hard:'TAZKY'}[t.difficulty];
+    const hasEssay = state.ownedUpgrades.includes('essay-help');
+    const canSkip = hasSkip && skipPassCooldownRemaining === 0;
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.style.cursor = 'pointer';
+    card.innerHTML = `
+      <div class="diff-badge ${dc}">${dl}</div>
+      <div class="question-text">${t.title}: <span style="color:rgba(245,240,232,0.7)">${t.subtitle}</span></div>
+      <div style="color:rgba(245,240,232,0.5);font-size:0.9rem;margin-top:0.3rem">5 otazok · ⏱️ ${state.ownedUpgrades.includes('extra-time') ? '4:00' : '2:00'} min${hasEssay ? ' · 📄 Essay Help aktívny' : ''}</div>
+      ${canSkip ? `<button onclick="event.stopPropagation();useSkipPass(${idx})" style="margin-top:0.6rem;font-family:'Permanent Marker',cursive;background:var(--green);color:white;border:none;border-radius:50px;padding:0.35rem 1rem;cursor:pointer;font-size:0.8rem">🏃 Skip (+${Math.floor(t.questions.length*5*(state.ownedUpgrades.includes('double-xp')?2:1)*(state.xpPenalty?0.5:1))} XP)</button>` : ''}
+    `;
+    card.addEventListener('click', () => startTest(t));
+    container.appendChild(card);
+  });
+}
+
+
+function startSkipCooldown() {
+  skipPassCooldownRemaining = 240; // 4 minúty
+  renderTests();
+  skipPassCooldownInterval = setInterval(() => {
+    skipPassCooldownRemaining--;
+    // Update countdown text if banner exists
+    const cd = document.getElementById('skip-countdown');
+    if (cd) {
+      const m = Math.floor(skipPassCooldownRemaining / 60);
+      const s = skipPassCooldownRemaining % 60;
+      cd.textContent = m + ':' + String(s).padStart(2, '0');
+    }
+    if (skipPassCooldownRemaining <= 0) {
+      clearInterval(skipPassCooldownInterval);
+      skipPassCooldownInterval = null;
+      skipPassCooldownRemaining = 0;
+      renderTests();
+      showNotification('🏃 Skip Pass je znova dostupný!', 'success');
+    }
+  }, 1000);
+}
+
+function useSkipPass(testIndex) {
+  if (skipPassCooldownRemaining > 0) return;
+  const t = tests[testIndex];
+  if (!t) return;
+  // Plné XP ako keby dostal všetky správne
+  let xpGain = t.questions.length * 5;
+  if (state.ownedUpgrades.includes('double-xp')) xpGain *= 2;
+  if (state.xpPenalty) { xpGain = Math.floor(xpGain * 0.5); state.xpPenalty = false; }
+  state.xp += xpGain;
+  state.testsCompleted++;
+  updateStats();
+  startSkipCooldown();
+  showNotification('🏃 Test preskočený! +' + xpGain + ' XP', 'success');
+}
+
+
+function startTest(t) {
+  // Každý štart = nové náhodné otázky z poolu
+  const pool = t._pool || t.questions;
+  t.questions = [...pool].sort(() => Math.random() - 0.5).slice(0, 5);
+  state.currentTest = t;
+  document.getElementById('test-selector').style.display = 'none';
+  document.getElementById('test-active').style.display = 'block';
+  document.getElementById('score-display').classList.remove('visible');
+  const c = document.getElementById('questions-container');
+  c.innerHTML = '';
+  const showHint = state.ownedUpgrades.includes('hint-mode');
+  const showEssay = state.ownedUpgrades.includes('essay-help');
+  t.questions.forEach((q, i) => {
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.innerHTML = `
+      <div class="question-number">Otazka ${i+1} z ${t.questions.length}</div>
+      <div class="question-text">${q.q}</div>
+      ${showHint ? `<div style="color:var(--yellow);font-size:0.85rem;margin-bottom:0.7rem">💡 Nápoveda: ${q.hint}</div>` : ''}
+      <div class="essay-help-slot-${i}" style="margin-bottom:0.7rem"></div>
+      <input class="answer-input" id="ans-${i}" type="text" placeholder="Napis odpoved..." autocomplete="off">
+      <div class="answer-feedback" id="fb-${i}"></div>
+    `;
+    c.appendChild(card);
+    if (showEssay) {
+      const helpDiv = card.querySelector(`.essay-help-slot-${i}`);
+      helpDiv.style.color = '#a78bfa';
+      helpDiv.style.fontSize = '0.85rem';
+      const icon = document.createElement('span');
+      icon.textContent = '📄 Essay Help: ';
+      const answer = document.createElement('em');
+      answer.textContent = q.answer;
+      helpDiv.appendChild(icon);
+      helpDiv.appendChild(answer);
+    }
+  });
+
+  // Reset submit button
+  const submitBtn = document.getElementById('submit-btn');
+  submitBtn.disabled = false;
+  submitBtn.textContent = '📬 Odovzdať test';
+  submitBtn.style.opacity = '1';
+
+  // Timer — základ 2 minúty, +2 min za extra-time upgrade
+  const baseSeconds = 120;
+  const bonusSeconds = state.ownedUpgrades.includes('extra-time') ? 120 : 0;
+  testSubmitted = false;
+  testTimerSeconds = baseSeconds + bonusSeconds;
+  startTestTimer(testTimerSeconds);
+
+  showNotification('Short test zacat! Andrea sleduje...', 'info');
+}
+
+function startTestTimer(totalSeconds) {
+  if (testTimerInterval) clearInterval(testTimerInterval);
+  let remaining = totalSeconds;
+  updateTimerDisplay(remaining, totalSeconds);
+  testTimerInterval = setInterval(() => {
+    remaining--;
+    updateTimerDisplay(remaining, totalSeconds);
+    if (remaining <= 0) {
+      clearInterval(testTimerInterval);
+      testTimerInterval = null;
+      if (!testSubmitted) {
+        showNotification('⏰ Čas vypršal! Andrea vyberá testy.', 'fail');
+        submitTest(true); // true = timeout
+      }
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay(remaining, total) {
+  const m = Math.floor(remaining / 60);
+  const s = remaining % 60;
+  const display = document.getElementById('test-timer-display');
+  const fill = document.getElementById('test-timer-fill');
+  if (!display || !fill) return;
+  display.textContent = m + ':' + String(s).padStart(2, '0');
+  const pct = (remaining / total) * 100;
+  fill.style.width = pct + '%';
+  if (remaining <= 20) {
+    display.style.color = 'var(--red)';
+    display.style.animation = 'bop 0.3s ease-in-out infinite alternate';
+  } else if (remaining <= 40) {
+    display.style.color = '#ff8c00';
+    display.style.animation = 'none';
+  } else {
+    display.style.color = 'var(--yellow)';
+    display.style.animation = 'none';
+  }
+}
+
+
+// normalizeAnswer and answersMatch defined later (casino section) — used here too
+
+function submitTest(timeout) {
+  const t = state.currentTest;
+  if (!t) return;
+  const submitBtn = document.getElementById('submit-btn');
+  if (submitBtn.disabled) return;
+  testSubmitted = true;
+  submitBtn.disabled = true;
+  submitBtn.textContent = '✅ Odovzdané';
+  submitBtn.style.opacity = '0.5';
+
+  // Zastav timer
+  if (testTimerInterval) { clearInterval(testTimerInterval); testTimerInterval = null; }
+
+  let correct = 0;
+  t.questions.forEach((q, i) => {
+    const inp = document.getElementById('ans-'+i);
+    const fb  = document.getElementById('fb-'+i);
+    inp.disabled = true;
+    if (answersMatch(inp.value, q.answer)) {
+      correct++;
+      inp.className = 'answer-input correct';
+      fb.textContent = 'Spravne!'; fb.className = 'answer-feedback visible correct-fb';
+    } else {
+      inp.className = 'answer-input wrong';
+      fb.textContent = 'Spravne: "' + q.answer + '"'; fb.className = 'answer-feedback visible wrong-fb';
+    }
+  });
+  const pct = Math.round(correct/t.questions.length*100);
+  let xpGain = correct*5;
+  if (state.ownedUpgrades.includes('double-xp')) xpGain *= 2;
+  if (state.xpPenalty) { xpGain = Math.floor(xpGain * 0.5); state.xpPenalty = false; }
+
+  // Anger shield — znižuje nárast hnevu o 50%
+  const angerMult = state.ownedUpgrades.includes('anger-shield') ? 0.5 : 1;
+  const angerDayMult = state.doubleangerDay ? 2 : 1;
+  if (state.doubleangerDay) state.doubleangerDay = false;
+
+  let color, comment;
+  if (pct >= 80) {
+    color='#10B981'; comment='Andrea: "...hmm. Dobre. Len tentokrat."';
+    state.angerLevel = Math.max(0, state.angerLevel-10);
+  } else if (pct >= 50) {
+    color='#FFD60A'; comment='Andrea: "Priemerne. Ako vzdy."';
+    state.angerLevel = Math.min(100, state.angerLevel + Math.round(10 * angerMult * angerDayMult));
+  } else {
+    color='#FF3B3B'; comment='Andrea: "Neprijatelne. Pisem to do katalogu."';
+    state.angerLevel = Math.min(100, state.angerLevel + Math.round(25 * angerMult * angerDayMult));
+    state.fails++; xpGain = Math.floor(xpGain/2);
+  }
+  if (timeout) {
+    color='#FF3B3B'; comment='Andrea: "Nestihol/a si. Typické."';
+    state.angerLevel = Math.min(100, state.angerLevel + Math.round(20 * angerMult * angerDayMult));
+    state.fails++; xpGain = 0;
+  }
+  state.xp += xpGain; state.testsCompleted++;
+  updateStats();
+  saveState();
+  document.getElementById('score-number').innerHTML = `<span style="color:${color}">${correct}/${t.questions.length}</span>`;
+  document.getElementById('score-comment').textContent = comment + (xpGain > 0 ? ' (+' + xpGain + ' XP)' : '');
+  document.getElementById('score-display').classList.add('visible');
+  document.getElementById('score-display').scrollIntoView({behavior:'smooth',block:'center'});
+  if (!timeout) showNotification(pct>=80 ? '+'+xpGain+' XP! Vyborne!' : 'Fail! +'+xpGain+' XP', pct>=80?'success':'fail');
+}
+
+function resetTest() {
+  state.currentTest = null;
+  testSubmitted = false;
+  if (testTimerInterval) { clearInterval(testTimerInterval); testTimerInterval = null; }
+  document.getElementById('test-selector').style.display = 'block';
+  document.getElementById('test-active').style.display = 'none';
+  document.getElementById('score-display').classList.remove('visible');
+  const submitBtn = document.getElementById('submit-btn');
+  submitBtn.disabled = false;
+  submitBtn.textContent = '📬 Odovzdať test';
+  submitBtn.style.opacity = '1';
+  randomQuote();
+}
+
+document.getElementById('submit-btn').addEventListener('click', () => submitTest(false));
+document.getElementById('next-test-btn').addEventListener('click', resetTest);
+
+// ===================== STORY MODE =====================
+function renderStories() {
+  const container = document.getElementById('story-container');
+  container.innerHTML = '';
+  const sc = document.getElementById('story-content');
+  sc.classList.remove('visible');
+  sc.innerHTML = '';
+
+  stories.forEach(s => {
+    const isUnlocked  = state.unlockedStories.includes(s.id);
+    const isCompleted = state.completedStories.includes(s.id);
+    const card = document.createElement('div');
+    card.className = 'story-card ' + (isCompleted ? 'completed' : isUnlocked ? 'unlocked' : 'locked');
+
+    let badge;
+    if (isCompleted)      badge = '<div class="story-badge completed-badge">Splnene</div>';
+    else if (!isUnlocked) badge = '<div class="story-badge locked-badge">Zamknute</div>';
+    else                  badge = '<div class="story-badge new-badge">Nove!</div>';
+
+    card.innerHTML = badge +
+      '<h3>' + s.title + '</h3>' +
+      '<p>' + s.preview + '</p>' +
+      (isCompleted ? '<p class="story-done-msg">Tento den si uz prezil/a. Pokracuj na dalsi!</p>' : '');
+
+    if (isUnlocked && !isCompleted) {
+      card.addEventListener('click', () => startStory(s));
+    }
+    container.appendChild(card);
+  });
+}
+
+function startStory(story) {
+  const sc = document.getElementById('story-content');
+  sc.classList.remove('visible');
+  sc.innerHTML = '';
+  renderStoryStep(story, 0);
+}
+
+function renderStoryStep(story, stepIdx) {
+  const sc   = document.getElementById('story-content');
+  const step = story.steps[stepIdx];
+  sc.classList.add('visible');
+
+  const p = document.createElement('p');
+  p.innerHTML = step.text.replace(/\n/g, '<br><br>');
+  sc.appendChild(p);
+
+  const choicesDiv = document.createElement('div');
+  choicesDiv.style.marginTop = '1.2rem';
+  step.choices.forEach(choice => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = choice.text;
+    btn.addEventListener('click', () => {
+      choicesDiv.querySelectorAll('button').forEach(b => b.disabled = true);
+      handleStoryChoice(story, choice);
+    });
+    choicesDiv.appendChild(btn);
+  });
+  sc.appendChild(choicesDiv);
+  sc.scrollIntoView({behavior:'smooth'});
+}
+
+function handleStoryChoice(story, choice) {
+  if (choice.outcome === 'continue') {
+    renderStoryStep(story, choice.next);
+    return;
+  }
+  const xpGain = choice.xp || 0;
+  state.xp += xpGain;
+
+  if (choice.outcome === 'end-bad') {
+    state.angerLevel = Math.min(100, state.angerLevel+20);
+    state.fails++;
+    updateStats();
+    showNotification('Fail! Andrea wins. +'+xpGain+' XP', 'fail');
+    appendStoryEnd('bad', story, xpGain);
+  } else if (choice.outcome === 'end-ok') {
+    state.angerLevel = Math.min(100, state.angerLevel+5);
+    updateStats();
+    showNotification('Prezil/a si. +'+xpGain+' XP', 'info');
+    completeStory(story, xpGain, 'ok');
+  } else if (choice.outcome === 'end-best') {
+    state.angerLevel = Math.max(0, state.angerLevel-10);
+    updateStats();
+    showNotification('Perfektne! +'+xpGain+' XP', 'success');
+    completeStory(story, xpGain, 'best');
+  }
+}
+
+function completeStory(story, xpGain, quality) {
+  if (!state.completedStories.includes(story.id)) state.completedStories.push(story.id);
+  const next = stories.find(x => x.id === story.id+1);
+  if (story.unlocksNext && next && !state.unlockedStories.includes(next.id)) {
+    state.unlockedStories.push(next.id);
+    setTimeout(() => showNotification('Odmoknute: ' + next.title, 'success'), 1200);
+  }
+  appendStoryEnd(quality, story, xpGain);
+}
+
+function appendStoryEnd(quality, story, xpGain) {
+  const sc = document.getElementById('story-content');
+  const icons  = {bad:'💀', ok:'😐', best:'🏆'};
+  const colors = {bad:'var(--red)', ok:'var(--yellow)', best:'var(--green)'};
+  const msgs   = {bad:'Andrea: "Presne co som ocakavala."', ok:'Andrea: "Priemerne. Ako vzdy."', best:'Andrea: "...Dobre. Len tentokrat."'};
+  const titles = {bad:'Game Over', ok:'Den '+story.day+' splneny', best:'Den '+story.day+' splneny!'};
+  const next   = stories.find(x => x.id === story.id+1);
+  const unlocked = quality !== 'bad' && story.unlocksNext && next;
+
+  const endDiv = document.createElement('div');
+  endDiv.className = 'story-end ' + quality + '-end';
+  endDiv.innerHTML =
+    '<div class="end-icon">'+icons[quality]+'</div>' +
+    '<div class="end-title" style="color:'+colors[quality]+'">'+titles[quality]+'</div>' +
+    '<div class="end-sub">'+msgs[quality]+'</div>' +
+    '<div class="end-xp">+'+xpGain+' XP</div>' +
+    (unlocked ? '<div class="unlock-banner">Odmoknute: <strong>'+next.title+'</strong>!</div>' : '');
+
+  const btn = document.createElement('button');
+  btn.className = 'choice-btn';
+  btn.style.marginTop = '0.8rem';
+  btn.textContent = quality === 'bad' ? 'Skusit znova' : 'Spat na denniky';
+  btn.addEventListener('click', () => {
+    if (quality === 'bad') startStory(story);
+    else renderStories();
+  });
+  endDiv.appendChild(btn);
+  sc.appendChild(endDiv);
+  endDiv.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+// ===================== UPGRADES =====================
+let currentUpgradeTab = 'normal';
+
+function switchUpgradeTab(tab) {
+  currentUpgradeTab = tab;
+  const btnNormal = document.getElementById('upg-tab-normal');
+  const btnAttack = document.getElementById('upg-tab-attack');
+  if (tab === 'normal') {
+    btnNormal.style.background = 'rgba(139,92,246,0.3)'; btnNormal.style.color = 'white'; btnNormal.style.borderColor = 'var(--purple)';
+    btnAttack.style.background = 'rgba(255,68,68,0.08)'; btnAttack.style.color = 'rgba(245,240,232,0.5)'; btnAttack.style.borderColor = 'rgba(255,68,68,0.4)';
+  } else {
+    btnAttack.style.background = 'rgba(255,68,68,0.25)'; btnAttack.style.color = 'white'; btnAttack.style.borderColor = '#ff4444';
+    btnNormal.style.background = 'rgba(139,92,246,0.08)'; btnNormal.style.color = 'rgba(245,240,232,0.5)'; btnNormal.style.borderColor = 'rgba(139,92,246,0.4)';
+  }
+  renderUpgrades();
+}
+
+function renderUpgrades() {
+  const grid = document.getElementById('upgrade-grid');
+  grid.innerHTML = '';
+  const list = upgrades.filter(u => currentUpgradeTab === 'normal' ? !u.bossDmg : !!u.bossDmg);
+  list.forEach(u => {
+    const owned     = state.ownedUpgrades.includes(u.id);
+    const canAfford = state.xp >= u.cost;
+    const card = document.createElement('div');
+    card.className = 'upgrade-card';
+    const upgradeBtn = document.createElement('button');
+    upgradeBtn.className = 'upgrade-btn' + (owned ? ' owned' : !canAfford ? ' cant-afford' : '');
+    upgradeBtn.textContent = owned ? 'Kupene' : canAfford ? 'Kupit' : 'Nemas XP';
+    if (owned) upgradeBtn.disabled = true;
+    if (!owned) upgradeBtn.addEventListener('click', () => { buyUpgrade(u.id, u.cost); });
+
+    card.innerHTML =
+      '<span class="upgrade-icon">'+u.icon+'</span>' +
+      '<div class="upgrade-name">'+u.name+'</div>' +
+      '<div class="upgrade-desc">'+u.desc+(u.bossDmg ? ` <span style="color:#ff8888;font-weight:700">⚔️ ${u.bossDmg} DMG</span>` : '')+'</div>' +
+      '<div class="upgrade-cost">'+(owned ? 'Vlastnis' : u.cost+' XP')+'</div>';
+    card.appendChild(upgradeBtn);
+    grid.appendChild(card);
+  });
+}
+
+function buyUpgrade(id, cost) {
+  if (state.ownedUpgrades.includes(id)) return;
+  if (state.xp < cost) { showNotification('Nemas dost XP!', 'fail'); return; }
+  state.xp -= cost;
+  state.ownedUpgrades.push(id);
+  updateStats();
+  renderUpgrades();
+  renderTests();
+  showNotification('Upgrade odmoknute!', 'success');
+}
+
+// ===================== ORAL EXAM =====================
+const oral = { questions:[], currentQ:0, score:0, timer:null, timeLeft:10 };
+
+function startOral() {
+  document.getElementById('oral-start').style.display  = 'none';
+  document.getElementById('oral-result').style.display = 'none';
+  document.getElementById('oral-game').style.display   = 'block';
+  oral.questions = [...oralQuestions].sort(()=>Math.random()-0.5).slice(0,5);
+  oral.currentQ = 0; oral.score = 0;
+  showOralQ();
+}
+
+function showOralQ() {
+  if (oral.currentQ >= oral.questions.length) { endOral(); return; }
+  const q = oral.questions[oral.currentQ];
+  document.getElementById('oral-question-text').textContent = q.q;
+  const opts = document.getElementById('oral-options');
+  opts.innerHTML = '';
+
+  // Shuffle options but track where the correct answer ends up
+  const correctText = q.options[q.correct];
+  const shuffled = [...q.options].sort(() => Math.random() - 0.5);
+  const newCorrectIdx = shuffled.indexOf(correctText);
+
+  shuffled.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'oral-option';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => answerOral(i, newCorrectIdx));
+    opts.appendChild(btn);
+  });
+  oral.currentCorrectIdx = newCorrectIdx;
+  startOralTimer();
+}
+
+function startOralTimer() {
+  clearInterval(oral.timer);
+  oral.timeLeft = 10;
+  updateTimerUI();
+  oral.timer = setInterval(() => {
+    oral.timeLeft--;
+    updateTimerUI();
+    if (oral.timeLeft <= 0) {
+      clearInterval(oral.timer);
+      showNotification('Cas vyprssal! Andrea: "NEPRIJATELNE."', 'fail');
+      state.angerLevel = Math.min(100, state.angerLevel+15);
+      updateStats();
+      const buttons = document.getElementById('oral-options').querySelectorAll('button');
+      buttons.forEach(b => b.disabled=true);
+      if (oral.currentCorrectIdx !== undefined) buttons[oral.currentCorrectIdx]?.classList.add('correct-choice');
+      setTimeout(() => { oral.currentQ++; showOralQ(); }, 1200);
+    }
+  }, 1000);
+}
+
+function updateTimerUI() {
+  const t = oral.timeLeft;
+  document.getElementById('timer-text').textContent = t;
+  const c = document.getElementById('timer-circle');
+  c.style.strokeDashoffset = 283*(1-t/10);
+  c.style.stroke = t>6 ? '#10B981' : t>3 ? '#FFD60A' : '#FF3B3B';
+}
+
+function answerOral(idx, correctIdx) {
+  clearInterval(oral.timer);
+  const opts = document.getElementById('oral-options').querySelectorAll('button');
+  opts.forEach(o => o.disabled=true);
+  opts[correctIdx].classList.add('correct-choice');
+  if (idx === correctIdx) { oral.score++; showNotification('Spravne!', 'success'); }
+  else { opts[idx].classList.add('wrong-choice'); showNotification('Zle!', 'fail'); }
+  setTimeout(() => { oral.currentQ++; showOralQ(); }, 1000);
+}
+
+function endOral() {
+  clearInterval(oral.timer);
+  document.getElementById('oral-game').style.display   = 'none';
+  document.getElementById('oral-result').style.display = 'block';
+  const pct = Math.round(oral.score/oral.questions.length*100);
+  let xpGain = oral.score*5;
+  if (state.ownedUpgrades.includes('double-xp')) xpGain *= 2;
+  if (state.xpPenalty) { xpGain = Math.floor(xpGain * 0.5); state.xpPenalty = false; }
+  state.xp += xpGain; state.testsCompleted++;
+  let color, comment;
+  if (pct>=80) {
+    color='var(--green)'; comment='Andrea: "...Prekvapivo dobre." +'+xpGain+' XP';
+    state.angerLevel=Math.max(0,state.angerLevel-15);
+  } else if (pct>=50) {
+    color='var(--yellow)'; comment='Andrea: "Priemerne. Sadni." +'+xpGain+' XP';
+    state.angerLevel=Math.min(100,state.angerLevel+10);
+  } else {
+    color='var(--red)'; comment='Andrea: "Katastrofa. Rodicia dostanu spravu." +'+xpGain+' XP';
+    state.angerLevel=Math.min(100,state.angerLevel+30); state.fails++;
+  }
+  updateStats();
+  document.getElementById('oral-score').innerHTML = '<span style="color:'+color+'">'+oral.score+'/'+oral.questions.length+'</span>';
+  document.getElementById('oral-comment').textContent = comment;
+}
+
+document.getElementById('oral-start-btn').addEventListener('click', startOral);
+document.getElementById('oral-retry-btn').addEventListener('click', startOral);
+
+// ===================== CHALK DUST =====================
+document.addEventListener('click', e => {
+  for (let i=0;i<5;i++) {
+    const d=document.createElement('div');
+    d.className='chalk-dust';
+    const s=4+Math.random()*8;
+    d.style.cssText='left:'+e.clientX+'px;top:'+e.clientY+'px;width:'+s+'px;height:'+s+'px;--dx:'+((Math.random()-0.5)*60)+'px;--dy:'+((Math.random()-0.5)*60)+'px';
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(),1000);
+  }
+});
+
+// ===================== FLOATING EMOJIS =====================
+(function(){
+  const emojis=['📝','✏️','📚','😤','😱','🖊️','📋','💀','⚠️','🔴'];
+  const c=document.getElementById('emoji-bg-container');
+  emojis.forEach(e=>{
+    const el=document.createElement('div');
+    el.className='emoji-bg';
+    el.textContent=e;
+    el.style.left=(Math.random()*100)+'vw';
+    el.style.animationDuration=(8+Math.random()*12)+'s';
+    el.style.animationDelay=(Math.random()*10)+'s';
+    el.style.fontSize=(1.5+Math.random()*2)+'rem';
+    c.appendChild(el);
+  });
+})();
+
+// ===================== RANDOM EVENTS =====================
+const randomEvents = [
+  // ✅ DOBRÉ (4)
+  { icon:'⭐', name:'XP Boost', desc:'Náhodná kontrola žiackej knižky. Všetko v poriadku. +12 XP.', effect:'good', fn: ()=>{ state.xp+=12; updateStats(); showNotification('⭐ +12 XP!','success'); } },
+  { icon:'🎁', name:'Tajný bonus', desc:'Andrea "zabudla" opraviť tvoje testy. Všetky sú automaticky správne. +25 XP.', effect:'good', fn: ()=>{ state.xp+=25; updateStats(); showNotification('🎁 +25 XP zadarmo!','success'); } },
+  { icon:'🧊', name:'Chladná Andrea', desc:'Dnes nehovorí nič. Hnev -15%. Ale to je podozrivé...', effect:'good', fn: ()=>{ state.angerLevel=Math.max(0,state.angerLevel-15); updateStats(); showNotification('🧊 Hnev -15%!','success'); } },
+  { icon:'☕', name:'Káva zachránila deň', desc:'Niekto doniesol Andrei kávu. Hnev resetnutý na 20%.', effect:'good', fn: ()=>{ state.angerLevel=20; updateStats(); showNotification('☕ Hnev resetnutý!','success'); } },
+  // ❌ ZLÉ (6)
+  { icon:'💀', name:'DOUBLE hnev', desc:'Andrea si pamätá tvoj posledný fail. Hnev +20% okamžite.', effect:'bad', fn: ()=>{ state.angerLevel=Math.min(100,state.angerLevel+20); updateStats(); showNotification('💀 Hnev +20%!','fail'); } },
+  { icon:'😤', name:'Andrea je v ZLOM rozmere', desc:'Dnes ráno jej niekto zjedol obed. Každý fail dnes = dvojitý hnev.', effect:'bad', fn: ()=>{ state.doubleangerDay=true; saveState(); showNotification('😤 Dvojitý hnev dnes!','fail'); } },
+  { icon:'📵', name:'Telefón v triede', desc:'Andrea videla tvoj telefón. Hnev +25% okamžite.', effect:'bad', fn: ()=>{ state.angerLevel=Math.min(100,state.angerLevel+25); updateStats(); showNotification('📵 Schovaj telefón!','fail'); } },
+  { icon:'📋', name:'Surprise Short Test', desc:'Andrea práve vymyslela nový test. XP za ďalší test -50%.', effect:'bad', fn: ()=>{ state.xpPenalty=true; saveState(); showNotification('📋 XP penalizácia na ďalší test!','fail'); } },
+  { icon:'😡', name:'Andrea ťa videla opisovať', desc:'Nie si myslel že to vidí? Hnev +30% a stratíš 20 XP.', effect:'bad', fn: ()=>{ state.angerLevel=Math.min(100,state.angerLevel+30); state.xp=Math.max(0,state.xp-20); updateStats(); showNotification('😡 Hnev +30%, -20 XP!','fail'); } },
+  { icon:'🔴', name:'Rodičovské združenie', desc:'Andrea zavolala tvojich rodičov. Hnev +35%. Niet úniku.', effect:'bad', fn: ()=>{ state.angerLevel=Math.min(100,state.angerLevel+35); updateStats(); showNotification('🔴 Rodičia zavolaní! Hnev +35%!','fail'); } },
+];
+
+let spinCooldown = false;
+
+function initRandomEvent() {
+  document.getElementById('spin-btn').addEventListener('click', spinEvent);
+}
+
+function spinEvent() {
+  if (spinCooldown) return;
+  spinCooldown = true;
+  sfx.eventSpin();
+  const btn = document.getElementById('spin-btn');
+  const slot = document.getElementById('slot-display');
+  const resultCard = document.getElementById('event-result-card');
+  btn.disabled = true;
+  resultCard.style.display = 'none';
+  slot.classList.add('spinning');
+
+  const allIcons = randomEvents.map(e => e.icon);
+  let ticks = 0;
+  const maxTicks = 20 + Math.floor(Math.random() * 15);
+  const interval = setInterval(() => {
+    slot.textContent = allIcons[Math.floor(Math.random() * allIcons.length)];
+    ticks++;
+    if (ticks >= maxTicks) {
+      clearInterval(interval);
+      slot.classList.remove('spinning');
+      const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
+      slot.textContent = event.icon;
+      showEventResult(event);
+      event.fn();
+
+      // Cooldown 1m 30s
+      let secs = 90;
+      const cd = document.getElementById('spin-cooldown');
+      const fmt = s => `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+      cd.textContent = `Ďalšie točenie za ${fmt(secs)}`;
+      const cdInterval = setInterval(() => {
+        secs--;
+        cd.textContent = `Ďalšie točenie za ${fmt(secs)}`;
+        if (secs <= 0) {
+          clearInterval(cdInterval);
+          cd.textContent = '';
+          btn.disabled = false;
+          spinCooldown = false;
+        }
+      }, 1000);
+    }
+  }, 80);
+}
+
+function showEventResult(event) {
+  const card = document.getElementById('event-result-card');
+  const colorMap = { good: 'var(--green)', bad: 'var(--red)', wild: '#f59e0b' };
+  const labelMap = { good: '✅ Pozitívny efekt!', bad: '💀 Negatívny efekt!', wild: '🃏 Náhodný efekt!' };
+  document.getElementById('event-icon').textContent = event.icon;
+  document.getElementById('event-name').textContent = event.name;
+  document.getElementById('event-name').style.color = colorMap[event.effect];
+  document.getElementById('event-desc').textContent = event.desc;
+  const el = document.getElementById('event-effect-label');
+  el.textContent = labelMap[event.effect];
+  el.style.color = colorMap[event.effect];
+  card.style.display = 'block';
+  card.style.borderColor = colorMap[event.effect].replace('var(--green)', '#10B981').replace('var(--red)', '#FF3B3B');
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ===================== CASINO =====================
+const casinoGames = [
+  {
+    id: 'blackjack',
+    icon: '🃏',
+    title: 'Blackjack vs Andrea',
+    desc: 'Poraz Andreu v blackjacku. Ak máš viac ako ona bez presiahnutia 21, vyhráš.',
+    unlockTest: {
+      title: 'Test z angličtiny — Blackjack unlock',
+      questions: [
+        { q: "Preložte: 'I would have studied if I had known.'", answer: "Učil by som sa, keby som vedel." },
+        { q: "Správny tvar: 'She ___ (not/go) to school yesterday.'", answer: "did not go" },
+        { q: "Čo je opak slova 'ancient'?", answer: "modern" },
+        { q: "Doplň: 'Neither the students nor the teacher ___ (be) ready.'", answer: "was" },
+        { q: "Preložte: 'By the time he arrived, she had already left.'", answer: "Keď prišiel, ona už odišla." },
+      ]
+    }
+  },
+  {
+    id: 'slots',
+    icon: '🎰',
+    title: 'Školský Automat',
+    desc: 'Zatoč valcami. Zhodné symboly = výhra. Pozor — Andrea sleduje každý spin.',
+    unlockTest: {
+      title: 'Test z angličtiny — Automat unlock',
+      questions: [
+        { q: "Správna forma: '___ you ever ___ (visit) London?'", answer: "have visited" },
+        { q: "Čo znamená 'truant'?", answer: "záškolák" },
+        { q: "Doplň: 'I wish I ___ (study) harder last year.'", answer: "had studied" },
+        { q: "Preložte: 'The exam was harder than expected.'", answer: "Skúška bola ťažšia ako sa očakávalo." },
+        { q: "Správny tvar: 'If I ___ (be) you, I would apologize.'", answer: "were" },
+      ]
+    }
+  }
+];
+
+// ---- CASINO LOBBY ----
+function renderCasinoLobby() {
+  const lobby = document.getElementById('casino-lobby');
+  if (!lobby) return;
+  document.getElementById('casino-xp-display').textContent = state.xp;
+  lobby.innerHTML = '';
+  casinoGames.forEach(game => {
+    const unlocked = (state.unlockedCasino || []).includes(game.id);
+    const card = document.createElement('div');
+    card.className = 'casino-game-card ' + (unlocked ? 'unlocked' : 'locked');
+    card.innerHTML = `
+      <span class="casino-game-icon">${game.icon}</span>
+      <div class="casino-game-title">${game.title}</div>
+      <div class="casino-game-desc">${game.desc}</div>
+      ${unlocked
+        ? `<button class="casino-play-badge" onclick="launchCasinoGame('${game.id}')">▶ Hrať</button>`
+        : `<div class="casino-lock-badge">🔒 Sprav test na odomknutie</div>
+           <button class="casino-play-badge" style="margin-top:0.6rem;background:rgba(255,255,255,0.1);box-shadow:none;" onclick="showUnlockTest('${game.id}')">📝 Odomknúť</button>`
+      }
+    `;
+    lobby.appendChild(card);
+  });
+}
+
+// ---- UNLOCK TEST ----
+function showUnlockTest(gameId) {
+  const game = casinoGames.find(g => g.id === gameId);
+  if (!game) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'unlock-test-overlay';
+  overlay.id = 'unlock-overlay';
+  overlay.innerHTML = `
+    <div class="unlock-test-box">
+      <div class="unlock-test-title">🔓 ${game.unlockTest.title}</div>
+      <div class="unlock-test-sub">Odpovedz správne na 4/5 otázok a hra sa odomkne. Andrea sleduje.</div>
+      ${game.unlockTest.questions.map((q,i) => `
+        <div class="question-card" style="margin-bottom:0.8rem">
+          <div class="question-number">Otázka ${i+1}</div>
+          <div class="question-text">${q.q}</div>
+          <input class="answer-input" id="uq-${i}" type="text" placeholder="Odpoveď..." autocomplete="off">
+          <div class="answer-feedback" id="uf-${i}"></div>
+        </div>
+      `).join('')}
+      <div style="display:flex;gap:0.8rem;margin-top:1rem;flex-wrap:wrap">
+        <button class="btn-primary btn-red" style="margin:0;flex:1" onclick="submitUnlockTest('${gameId}')">📬 Odovzdať</button>
+        <button class="btn-primary" style="margin:0;flex:1;background:rgba(255,255,255,0.1);color:var(--chalk)" onclick="document.getElementById('unlock-overlay').remove()">❌ Zrušiť</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function normalizeAnswer(str) {
+  return str
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove diacritics
+    .replace(/[.,!?;:'"„"()–—\-]/g, '')               // remove punctuation
+    .replace(/\s+/g, ' ')                              // normalize spaces
+    .trim();
+}
+
+function answersMatch(userRaw, correctRaw) {
+  const user = normalizeAnswer(userRaw);
+  const cor  = normalizeAnswer(correctRaw);
+  if (user === cor) return true;
+
+  // Allow if correct answer contains user's answer (min 4 chars)
+  if (user.length >= 4 && cor.includes(user)) return true;
+
+  // Allow if user's words are all present in correct (handles word-order / partial)
+  const userWords = user.split(' ').filter(w => w.length > 2);
+  const corWords  = cor.split(' ');
+  if (userWords.length >= 2 && userWords.every(w => corWords.includes(w))) return true;
+
+  // Common Slovak/English alternates
+  const alternates = [
+    ['som sa ucil', 'ucil by som sa', 'ucil by som'],
+    ['ked prisiel', 'ked on prisiel', 'ked prisiel on'],
+    ['uz odisla', 'uz bola odisla', 'odisla uz'],
+    ['did not go', 'didn\'t go', 'didnt go'],
+    ['had studied', 'had studied harder', 'studied harder'],
+    ['were', 'was'],
+    ['have visited', 'have ever visited', 'visited'],
+  ];
+  for (const group of alternates) {
+    const normGroup = group.map(normalizeAnswer);
+    if (normGroup.includes(user) && normGroup.some(g => cor.includes(g) || g.includes(cor.split(' ')[0]))) return true;
+  }
+  return false;
+}
+
+function submitUnlockTest(gameId) {
+  const game = casinoGames.find(g => g.id === gameId);
+  // Disable submit button and inputs to prevent double-submit
+  const submitBtn = document.querySelector('#unlock-overlay .btn-red');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.5'; }
+  let correct = 0;
+  game.unlockTest.questions.forEach((q, i) => {
+    const inp = document.getElementById(`uq-${i}`);
+    const fb  = document.getElementById(`uf-${i}`);
+    inp.disabled = true;
+    const ans = inp.value.trim();
+    if (answersMatch(ans, q.answer)) {
+      correct++;
+      inp.classList.add('correct'); inp.classList.remove('wrong');
+      fb.textContent = '✅ Správne!'; fb.className = 'answer-feedback visible correct-fb';
+    } else {
+      inp.classList.add('wrong'); inp.classList.remove('correct');
+      fb.textContent = `❌ Správne: "${q.answer}"`; fb.className = 'answer-feedback visible wrong-fb';
+    }
+  });
+  if (correct >= 4) {
+    if (!state.unlockedCasino) state.unlockedCasino = [];
+    if (!state.unlockedCasino.includes(gameId)) state.unlockedCasino.push(gameId);
+    saveState();
+    setTimeout(() => {
+      document.getElementById('unlock-overlay')?.remove();
+      showNotification(`🔓 ${game.title} odomknuté!`, 'success');
+      renderCasinoLobby();
+    }, 1000);
+  } else {
+    showNotification(`❌ ${correct}/5 správne. Potrebuješ aspoň 4.`, 'fail');
+    state.angerLevel = Math.min(100, state.angerLevel + 10);
+    updateStats();
+  }
+}
+
+// ---- LAUNCH GAME ----
+function launchCasinoGame(gameId) {
+  document.getElementById('casino-lobby').style.display = 'none';
+  document.getElementById('casino-blackjack').style.display = 'none';
+  document.getElementById('casino-slots').style.display = 'none';
+  if (gameId === 'blackjack') { document.getElementById('casino-blackjack').style.display = 'block'; initBlackjack(); }
+  if (gameId === 'slots')     { document.getElementById('casino-slots').style.display = 'block'; initSlots(); }
+}
+
+function backToCasinoLobby() {
+  document.getElementById('casino-blackjack').style.display = 'none';
+  document.getElementById('casino-slots').style.display = 'none';
+  document.getElementById('casino-lobby').style.display = 'grid';
+  renderCasinoLobby();
+}
+
+// ===================== BLACKJACK =====================
+const SUITS = ['♠','♥','♦','♣'];
+const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const ANDREA_BJ_COMMENTS = {
+  playerBust:  ["Presiahol si 21. Toto je blackjack, nie matematika pre prvý stupeň.", "Bust. Presne ako tvoja posledná písomka.", "Over 21. Zaujímavé, na teste si tiež presiahol limit tolerancie."],
+  dealerBust:  ["Moje karty... to sa nestáva. Len tento raz.", "Zdá sa, že som sa prepočítala. Nebude sa opakovať.", "Bust. Nehovor to nikomu."],
+  playerWin:   ["Vyhral si. Ale z angličtiny stále máš jednotku.", "Šťastie začiatočníka. Na teste to nepomôže.", "Dobre. Ale toto nie je maturita."],
+  dealerWin:   ["Samozrejme, že som vyhrala. Som učiteľka.", "Prehra. Ako tvoj posledný test.", "Stratil si. Aspoň si sa niečo naučil — prehru."],
+  push:        ["Rovnaké skóre. Nedá sa to nazvať víťazstvom ani teba, ani mňa.", "Remíza. Nič neriešime.", "Push. Ako keď celá trieda dostane priemer."],
+  blackjack:   ["Blackjack?! To je... šťastie. Len šťastie.", "21 naraz. Zázrak. Na angličtine ho však neurobíš.", "Blackjack. Jeden raz."],
+  hit:         ["Ďalšia karta. Uvidíme.", "Berieš kartu. Odvaha alebo hlúposť?", "Hit. Ako tvoje písomky — vždy riskuješ."],
+  stand:       ["Stojíš. Múdre, alebo zbabelé?", "Stand. Aspoň jedno správne rozhodnutie.", "Zostávaš. Počkáme."],
+  lowBet:      ["5 XP? Naozaj?", "Staviš minimum. Typické.", "5 žetónov. Aspoň šetríš na horšie časy."],
+};
+
+function bjComment(key) {
+  const arr = ANDREA_BJ_COMMENTS[key];
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+let bjState = {};
+
+function initBlackjack() {
+  const el = document.getElementById('casino-blackjack');
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
+      <button onclick="backToCasinoLobby()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:var(--chalk);border-radius:50px;padding:0.4rem 1rem;cursor:pointer;font-family:'Nunito',sans-serif;font-size:0.9rem">← Späť</button>
+      <span style="font-family:'Permanent Marker',cursive;color:var(--chalk);font-size:1.1rem">🃏 Blackjack vs Andrea</span>
+    </div>
+    <div style="font-family:'Permanent Marker',cursive;color:var(--yellow);font-size:0.95rem;margin-bottom:0.8rem">💰 XP: <span id="bj-xp">${state.xp}</span></div>
+    <div class="bj-table">
+      <div class="bj-section-label" style="color:#86efac">👩‍🏫 Andrea (Dealer)</div>
+      <div class="bj-cards" id="bj-dealer-cards"></div>
+      <div class="bj-score" id="bj-dealer-score"></div>
+      <div class="bj-andrea-comment" id="bj-comment">Daj si žetóny a rozdám karty.</div>
+      <hr style="border-color:rgba(255,255,255,0.1);margin:0.8rem 0">
+      <div class="bj-section-label" style="color:#fca5a5">🎒 Ty (Hráč)</div>
+      <div class="bj-cards" id="bj-player-cards"></div>
+      <div class="bj-score" id="bj-player-score"></div>
+    </div>
+    <div id="bj-result-banner"></div>
+    <div class="bj-bet-display" id="bj-bet-display">Stávka: 0 XP</div>
+    <div class="bj-bet-row" id="bj-bet-row">
+      <div class="bj-bet-chip c5"  onclick="bjAddBet(5)">5</div>
+      <div class="bj-bet-chip c10" onclick="bjAddBet(10)">10</div>
+      <div class="bj-bet-chip c25" onclick="bjAddBet(25)">25</div>
+      <div class="bj-bet-chip c50" onclick="bjAddBet(50)">50</div>
+      <div class="bj-bet-chip" style="background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.2);color:rgba(245,240,232,0.5);width:52px;height:52px;display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;font-size:0.8rem" onclick="bjClearBet()">CLR</div>
+    </div>
+    <div class="bj-actions">
+      <button class="bj-btn bj-btn-deal" id="bj-deal-btn" onclick="bjDeal()">🃏 Rozdať</button>
+      <button class="bj-btn bj-btn-hit"  id="bj-hit-btn"  onclick="bjHit()"  disabled>Ber ➕</button>
+      <button class="bj-btn bj-btn-stand" id="bj-stand-btn" onclick="bjStand()" disabled>Stoj ✋</button>
+    </div>
+  `;
+  bjState = { deck: [], playerCards: [], dealerCards: [], bet: 0, phase: 'betting' };
+  bjState.deck = bjNewDeck();
+}
+
+function bjNewDeck() {
+  const d = [];
+  for (let s of SUITS) for (let r of RANKS) d.push({ suit: s, rank: r });
+  for (let i = d.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [d[i],d[j]] = [d[j],d[i]]; }
+  return d;
+}
+
+function bjCardValue(card) {
+  if (['J','Q','K'].includes(card.rank)) return 10;
+  if (card.rank === 'A') return 11;
+  return parseInt(card.rank);
+}
+
+function bjHandValue(cards) {
+  let val = cards.reduce((s, c) => s + bjCardValue(c), 0);
+  let aces = cards.filter(c => c.rank === 'A').length;
+  while (val > 21 && aces > 0) { val -= 10; aces--; }
+  return val;
+}
+
+function bjAddBet(amt) {
+  if (bjState.phase !== 'betting') return;
+  if (state.xp < bjState.bet + amt) { showNotification('❌ Nemáš dosť XP!', 'fail'); return; }
+  bjState.bet += amt;
+  document.getElementById('bj-bet-display').textContent = `Stávka: ${bjState.bet} XP`;
+  if (bjState.bet === 5) document.getElementById('bj-comment').textContent = bjComment('lowBet');
+}
+
+function bjClearBet() {
+  if (bjState.phase !== 'betting') return;
+  bjState.bet = 0;
+  document.getElementById('bj-bet-display').textContent = 'Stávka: 0 XP';
+}
+
+function bjDeal() {
+  if (bjState.bet === 0) { showNotification('Nastav stávku!', 'info'); return; }
+  if (bjState.deck.length < 10) bjState.deck = bjNewDeck();
+  bjState.playerCards = [bjState.deck.pop(), bjState.deck.pop()];
+  bjState.dealerCards = [bjState.deck.pop(), bjState.deck.pop()];
+  bjState.phase = 'playing';
+  sfx.bjCard(); setTimeout(() => sfx.bjCard(), 150);
+  document.getElementById('bj-deal-btn').disabled = true;
+  document.getElementById('bj-hit-btn').disabled = false;
+  document.getElementById('bj-stand-btn').disabled = false;
+  document.querySelectorAll('.bj-bet-chip').forEach(c => c.style.opacity = '0.4');
+  bjRenderCards(true);
+  const pv = bjHandValue(bjState.playerCards);
+  if (pv === 21) { document.getElementById('bj-comment').textContent = bjComment('blackjack'); setTimeout(bjStand, 600); }
+}
+
+function bjRenderCards(hideDealer = false) {
+  const pc = document.getElementById('bj-player-cards');
+  const dc = document.getElementById('bj-dealer-cards');
+  pc.innerHTML = ''; dc.innerHTML = '';
+  bjState.playerCards.forEach(c => pc.appendChild(bjMakeCard(c)));
+  bjState.dealerCards.forEach((c, i) => {
+    if (hideDealer && i === 1) { dc.appendChild(bjMakeHiddenCard()); }
+    else dc.appendChild(bjMakeCard(c));
+  });
+  const pv = bjHandValue(bjState.playerCards);
+  document.getElementById('bj-player-score').textContent = `Hodnota: ${pv}`;
+  if (!hideDealer) {
+    document.getElementById('bj-dealer-score').textContent = `Hodnota: ${bjHandValue(bjState.dealerCards)}`;
+  } else {
+    document.getElementById('bj-dealer-score').textContent = `Hodnota: ${bjCardValue(bjState.dealerCards[0])} + ?`;
+  }
+}
+
+function bjMakeCard(card) {
+  const div = document.createElement('div');
+  const isRed = ['♥','♦'].includes(card.suit);
+  div.className = 'bj-card ' + (isRed ? 'red' : 'black');
+  div.innerHTML = `<span>${card.rank}</span><span>${card.suit}</span>`;
+  return div;
+}
+
+function bjMakeHiddenCard() {
+  const div = document.createElement('div');
+  div.className = 'bj-card hidden';
+  div.innerHTML = `<span style="font-size:1.8rem">🂠</span>`;
+  return div;
+}
+
+function bjHit() {
+  bjState.playerCards.push(bjState.deck.pop());
+  sfx.bjCard();
+  bjRenderCards(true);
+  document.getElementById('bj-comment').textContent = bjComment('hit');
+  const pv = bjHandValue(bjState.playerCards);
+  if (pv > 21) { bjEndGame('bust'); }
+  else if (pv === 21) { bjStand(); }
+}
+
+function bjStand() {
+  document.getElementById('bj-hit-btn').disabled = true;
+  document.getElementById('bj-stand-btn').disabled = true;
+  document.getElementById('bj-comment').textContent = bjComment('stand');
+  // Dealer draws
+  const dealerPlay = () => {
+    const dv = bjHandValue(bjState.dealerCards);
+    if (dv < 17) {
+      bjState.dealerCards.push(bjState.deck.pop());
+      bjRenderCards(false);
+      setTimeout(dealerPlay, 700);
+    } else { bjEndGame('compare'); }
+  };
+  bjRenderCards(false);
+  setTimeout(dealerPlay, 600);
+}
+
+function bjEndGame(reason) {
+  bjState.phase = 'done';
+  document.getElementById('bj-hit-btn').disabled = true;
+  document.getElementById('bj-stand-btn').disabled = true;
+  document.querySelectorAll('.bj-bet-chip').forEach(c => c.style.opacity = '1');
+  bjRenderCards(false);
+
+  const pv = bjHandValue(bjState.playerCards);
+  const dv = bjHandValue(bjState.dealerCards);
+  const banner = document.getElementById('bj-result-banner');
+  let outcome;
+
+  if (reason === 'bust' || (reason === 'compare' && pv > 21)) {
+    outcome = 'lose'; banner.className = 'bj-result-banner bj-lose';
+    banner.textContent = `💀 Bust! Prehral si ${bjState.bet} XP`;
+    document.getElementById('bj-comment').textContent = bjComment('playerBust');
+    state.xp = Math.max(0, state.xp - bjState.bet);
+  } else if (dv > 21 || (reason === 'compare' && pv > dv)) {
+    outcome = 'win'; banner.className = 'bj-result-banner bj-win';
+    const gain = pv === 21 && bjState.playerCards.length === 2 ? Math.floor(bjState.bet * 1.5) : bjState.bet;
+    banner.textContent = `🏆 Vyhral si +${gain} XP!`;
+    document.getElementById('bj-comment').textContent = dv > 21 ? bjComment('dealerBust') : bjComment('playerWin');
+    state.xp += gain;
+  } else if (pv === dv) {
+    outcome = 'push'; banner.className = 'bj-result-banner bj-push';
+    banner.textContent = `🤝 Push — stávka vrátená`;
+    document.getElementById('bj-comment').textContent = bjComment('push');
+  } else {
+    outcome = 'lose'; banner.className = 'bj-result-banner bj-lose';
+    banner.textContent = `😤 Andrea vyhrala. Prehral si ${bjState.bet} XP`;
+    document.getElementById('bj-comment').textContent = bjComment('dealerWin');
+    state.xp = Math.max(0, state.xp - bjState.bet);
+  }
+
+  updateStats();
+  if (outcome === 'win') sfx.bjWin();
+  else if (outcome === 'lose') sfx.bjLose();
+  document.getElementById('bj-xp').textContent = state.xp;
+  bjState.bet = 0;
+  document.getElementById('bj-bet-display').textContent = 'Stávka: 0 XP';
+  document.getElementById('bj-deal-btn').disabled = false;
+  bjState.phase = 'betting';
+  if (state.xp === 0) showNotification('😤 Nemáš žiadne XP! Zarob ich testami.', 'fail');
+}
+
+// ===================== SLOT MACHINE =====================
+const SLOT_SYMBOLS = [
+  { s:'📝', name:'Short Test', val:2 },
+  { s:'✏️', name:'Pero',       val:2 },
+  { s:'📚', name:'Učebnica',   val:3 },
+  { s:'😤', name:'Andrea',     val:5 },
+  { s:'📋', name:'Katalóg',    val:4 },
+  { s:'🔴', name:'Červená',    val:6 },
+  { s:'💀', name:'Skull',      val:10 },
+];
+// Weighted pool — more common = more copies
+const SLOT_POOL = [
+  ...Array(6).fill(SLOT_SYMBOLS[0]),
+  ...Array(6).fill(SLOT_SYMBOLS[1]),
+  ...Array(4).fill(SLOT_SYMBOLS[2]),
+  ...Array(3).fill(SLOT_SYMBOLS[3]),
+  ...Array(3).fill(SLOT_SYMBOLS[4]),
+  ...Array(2).fill(SLOT_SYMBOLS[5]),
+  ...Array(1).fill(SLOT_SYMBOLS[6]),
+];
+
+let slotBet = 0;
+let slotSpinning = false;
+
+function initSlots() {
+  const el = document.getElementById('casino-slots');
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
+      <button onclick="backToCasinoLobby()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:var(--chalk);border-radius:50px;padding:0.4rem 1rem;cursor:pointer;font-family:'Nunito',sans-serif;font-size:0.9rem">← Späť</button>
+      <span style="font-family:'Permanent Marker',cursive;color:var(--chalk);font-size:1.1rem">🎰 Školský Automat</span>
+    </div>
+    <div style="font-family:'Permanent Marker',cursive;color:var(--yellow);font-size:0.95rem;margin-bottom:0.8rem">💰 XP: <span id="slot-xp-disp">${state.xp}</span></div>
+    <div class="slot-machine">
+      <div style="font-family:'Permanent Marker',cursive;color:#f59e0b;font-size:1rem;margin-bottom:0.5rem">🎰 ŠKOLSKÝ AUTOMAT 🎰</div>
+      <div class="slot-reels">
+        <div class="slot-reel" id="sreel-0">📝</div>
+        <div class="slot-reel" id="sreel-1">✏️</div>
+        <div class="slot-reel" id="sreel-2">📚</div>
+      </div>
+      <div class="slot-result-msg" id="slot-result-msg" style="color:var(--yellow)">Nastav stávku a točíme!</div>
+      <div class="bj-bet-display" id="slot-bet-display">Stávka: 0 XP</div>
+      <div class="slot-bet-row">
+        <div class="bj-bet-chip c5"  onclick="slotAddBet(5)">5</div>
+        <div class="bj-bet-chip c10" onclick="slotAddBet(10)">10</div>
+        <div class="bj-bet-chip c25" onclick="slotAddBet(25)">25</div>
+        <div class="bj-bet-chip" style="background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.2);color:rgba(245,240,232,0.5);width:52px;height:52px;display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;font-size:0.8rem" onclick="slotClearBet()">CLR</div>
+      </div>
+      <button class="spin-btn" id="slot-spin-btn" onclick="doSlotSpin()" style="margin-top:0.8rem">🎰 Točiť!</button>
+    </div>
+    <div class="slot-payline">
+      <div class="slot-payline-title">💰 Výplatná tabuľka (stávka × koef.)</div>
+      ${SLOT_SYMBOLS.map(s => `<div class="slot-payline-row"><span>${s.s} ${s.s} ${s.s}</span><span>× ${s.val}</span></div>`).join('')}
+      <div class="slot-payline-row"><span>Akékoľvek 2 rovnaké</span><span>× 1.3</span></div>
+    </div>
+  `;
+  slotBet = 0; slotSpinning = false;
+}
+
+function slotAddBet(amt) {
+  if (slotSpinning) return;
+  if (state.xp < slotBet + amt) { showNotification('❌ Nemáš dosť XP!', 'fail'); return; }
+  slotBet += amt;
+  document.getElementById('slot-bet-display').textContent = `Stávka: ${slotBet} XP`;
+}
+
+function slotClearBet() {
+  if (slotSpinning) return;
+  slotBet = 0;
+  document.getElementById('slot-bet-display').textContent = 'Stávka: 0 XP';
+}
+
+function doSlotSpin() {
+  if (slotSpinning || slotBet === 0) { if (slotBet === 0) showNotification('Nastav stávku!', 'info'); return; }
+  slotSpinning = true;
+  sfx.slotSpin();
+  document.getElementById('slot-spin-btn').disabled = true;
+  state.xp = Math.max(0, state.xp - slotBet);
+  updateStats(); document.getElementById('slot-xp-disp').textContent = state.xp;
+
+  const reels = [0,1,2].map(i => document.getElementById(`sreel-${i}`));
+  reels.forEach(r => r.classList.add('spinning'));
+  document.getElementById('slot-result-msg').textContent = '...';
+
+  const results = [0,1,2].map(() => SLOT_POOL[Math.floor(Math.random() * SLOT_POOL.length)]);
+  const delays = [900, 1200, 1500];
+
+  reels.forEach((reel, i) => {
+    const tick = setInterval(() => { reel.textContent = SLOT_POOL[Math.floor(Math.random()*SLOT_POOL.length)].s; }, 80);
+    setTimeout(() => {
+      clearInterval(tick);
+      reel.classList.remove('spinning');
+      reel.textContent = results[i].s;
+      sfx.slotStop(i);
+      if (i === 2) setTimeout(() => resolveSlot(results), 300);
+    }, delays[i]);
+  });
+}
+
+function resolveSlot(results) {
+  const [a, b, c] = results;
+  const msg = document.getElementById('slot-result-msg');
+  let win = 0;
+
+  if (a.s === b.s && b.s === c.s) {
+    win = slotBet * a.val;
+    msg.style.color = 'var(--green)';
+    msg.textContent = `🏆 JACKPOT! Tri ${a.s}! +${win} XP!`;
+    sfx.slotJackpot();
+    showNotification(`🏆 JACKPOT! +${win} XP!`, 'success');
+  } else if (a.s === b.s || b.s === c.s || a.s === c.s) {
+    win = Math.floor(slotBet * 1.3);
+    msg.style.color = 'var(--yellow)';
+    msg.textContent = `✨ Dve rovnaké! +${win} XP`;
+    sfx.slotWin();
+    showNotification(`✨ +${win} XP`, 'success');
+  } else {
+    msg.style.color = 'var(--red)';
+    msg.textContent = `💀 Nič. Prehral si ${slotBet} XP.`;
+    sfx.slotLose();
+    showNotification(`💀 -${slotBet} XP`, 'fail');
+  }
+
+  if (win > 0) { state.xp += win; }
+  updateStats();
+  document.getElementById('slot-xp-disp').textContent = state.xp;
+  slotBet = 0;
+  document.getElementById('slot-bet-display').textContent = 'Stávka: 0 XP';
+  slotSpinning = false;
+  document.getElementById('slot-spin-btn').disabled = false;
+  if (state.xp === 0) showNotification('😤 Nemáš žiadne XP! Zarob ich testami.', 'fail');
+}
+
+function initCasino() {
+  if (!state.unlockedCasino) state.unlockedCasino = [];
+  renderCasinoLobby();
+}
+
+// ===================== BOSS FIGHT =====================
+const BOSS_MAX_HP = 750;
+const PLAYER_MAX_HP = 110;
+const HAND_SIZE = 3;
+
+const BOSS_PHASES = [
+  { threshold: 1.0, name: '⚡ Fáza 1', badge: 'phase-1', dmgMult: 0.85, sprite: '👩‍🏫' },
+  { threshold: 0.6, name: '😤 Fáza 2', badge: 'phase-2', dmgMult: 1.25, sprite: '😤' },
+  { threshold: 0.3, name: '💀 Fáza 3', badge: 'phase-3', dmgMult: 1.85, sprite: '🤬' },
+];
+
+const BOSS_QUOTES_PHASE = [
+  ["Toto nie je test z bojového umenia.", "Čo to robíš? Sadni si!", "Zaujímavý pokus. Jednotka.", "Prestań. Toto nie je telocvičňa."],
+  ["Naozaj? Myslíš si, že mám strach?", "Bolesť? Ja dávam jednotky 20 rokov.", "Dvojka z angličtiny, jednoka z drzosti.", "Zabolelo? Mňa nie."],
+  ["DOSŤ! Celá trieda píše test TERAZ!", "Nevyhráš. Nikto nevyhráva.", "Posledné varovanie. Alebo prvé? Neviem.", "🩸 Toto... ešte nie je koniec."],
+];
+
+const BOSS_ATTACKS = [
+  { name:"Short Test",   dmg:[10,16], msg:"Andrea ti dala nečakaný short test!" },
+  { name:"Katalóg",      dmg:[7,12],  msg:"Andrea záznamník! Hnev +5%!", angerBonus:5 },
+  { name:"Krik",         dmg:[17,25], msg:"ANDREA KRIČÍ!" },
+  { name:"Dozeranie",    dmg:[5,9],   msg:"Andrea stojí za tebou. Nemôžeš sa sústrediť." },
+  { name:"Dvojitý test", dmg:[20,30], msg:"DVOJITÝ TEST! Kritický zásah!" },
+];
+
+// Build the card pool from owned damage upgrades — each upgrade = multiple copies in deck
+function buildCardPool() {
+  const pool = [];
+  const dmgUpgrades = upgrades.filter(u => u.bossDmg && state.ownedUpgrades.includes(u.id));
+  dmgUpgrades.forEach(u => {
+    // Weaker cards appear more often, stronger less often
+    const copies = u.bossDmg <= 30 ? 4 : u.bossDmg <= 75 ? 3 : u.bossDmg <= 150 ? 2 : 1;
+    const rarity  = u.bossDmg <= 30 ? 'common' : u.bossDmg <= 75 ? 'common' : u.bossDmg <= 150 ? 'rare' : 'epic';
+    for (let i = 0; i < copies; i++) {
+      pool.push({ id: u.id + '_' + i, upgradeId: u.id, icon: u.icon, name: u.name, dmg: u.bossDmg, rarity });
+    }
+  });
+  return pool;
+}
+
+function shuffleDeck(deck) {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return deck;
+}
+
+let bossState = {};
+
+function initBossFight() {
+  const hasDmg = upgrades.filter(u => u.bossDmg).some(u => state.ownedUpgrades.includes(u.id));
+  document.getElementById('boss-locked-screen').style.display = hasDmg ? 'none' : 'block';
+  document.getElementById('boss-main-screen').style.display = hasDmg ? 'block' : 'none';
+  document.getElementById('boss-victory-screen').style.display = 'none';
+  if (!hasDmg) return;
+  if (!bossState.hp || bossState.hp <= 0) resetBossFight();
+  else renderBossUI();
+}
+
+function resetBossFight() {
+  const pool = buildCardPool();
+  bossState = {
+    hp: BOSS_MAX_HP, playerHp: PLAYER_MAX_HP, phase: 0, won: false,
+    deck: shuffleDeck([...pool]),
+    hand: [],
+    discard: [],
+    busy: false,
+  };
+  // Draw initial hand
+  drawCards(HAND_SIZE);
+  document.getElementById('boss-victory-screen').style.display = 'none';
+  document.getElementById('boss-main-screen').style.display = 'block';
+  document.getElementById('boss-log').innerHTML = '<div class="boss-log-entry event">⚔️ Boj začal. Zahraj kartu zo svojej ruky!</div>';
+  renderBossUI();
+}
+
+function drawCards(n) {
+  for (let i = 0; i < n; i++) {
+    if (bossState.hand.length >= HAND_SIZE) break;
+    // Reshuffle discard into deck if empty
+    if (bossState.deck.length === 0) {
+      if (bossState.discard.length === 0) break;
+      bossState.deck = shuffleDeck([...bossState.discard]);
+      bossState.discard = [];
+      bossLog('♻️ Balíček sa zamiešal.', 'event');
+    }
+    bossState.hand.push(bossState.deck.pop());
+  }
+}
+
+function getBossPhase() {
+  const pct = bossState.hp / BOSS_MAX_HP;
+  if (pct <= 0.3) return 2;
+  if (pct <= 0.6) return 1;
+  return 0;
+}
+
+function renderBossUI() {
+  const phase = getBossPhase();
+  const phaseData = BOSS_PHASES[phase];
+  const hpPct = Math.max(0, (bossState.hp / BOSS_MAX_HP) * 100);
+  const playerPct = Math.max(0, (bossState.playerHp / PLAYER_MAX_HP) * 100);
+
+  document.getElementById('boss-hp-fill').style.width = hpPct + '%';
+  document.getElementById('boss-hp-fill').style.background = hpPct > 50 ? 'linear-gradient(90deg,#7f1d1d,#ff4444)' : hpPct > 20 ? 'linear-gradient(90deg,#92400e,#f59e0b)' : 'linear-gradient(90deg,#4c1d95,#ff00ff)';
+  document.getElementById('boss-hp-text').textContent = `${Math.max(0,bossState.hp)} / ${BOSS_MAX_HP} HP`;
+  document.getElementById('player-hp-fill').style.width = playerPct + '%';
+  document.getElementById('player-hp-fill').style.background = playerPct > 50 ? 'linear-gradient(90deg,#065f46,#10b981)' : playerPct > 25 ? 'linear-gradient(90deg,#78350f,#f59e0b)' : 'linear-gradient(90deg,#7f1d1d,#ff4444)';
+  document.getElementById('player-hp-text').textContent = `${Math.max(0,bossState.playerHp)}/${PLAYER_MAX_HP}`;
+
+  const sprite = document.getElementById('boss-sprite');
+  sprite.textContent = phaseData.sprite;
+  sprite.className = 'boss-sprite' + (bossState.hp <= 0 ? ' dead' : '');
+
+  const badge = document.getElementById('boss-phase-badge');
+  badge.textContent = phaseData.name;
+  badge.className = 'boss-phase-badge ' + phaseData.badge;
+
+  if (!bossState.won) {
+    const quotes = BOSS_QUOTES_PHASE[phase];
+    document.getElementById('boss-quote').textContent = quotes[Math.floor(Math.random() * quotes.length)];
+  }
+
+  // Deck / discard counters
+  document.getElementById('deck-count').textContent = bossState.deck.length;
+  document.getElementById('discard-count').textContent = bossState.discard.length;
+
+  // Render hand
+  const handEl = document.getElementById('boss-hand');
+  handEl.innerHTML = '';
+  const dead = bossState.hp <= 0 || bossState.playerHp <= 0 || bossState.busy;
+  bossState.hand.forEach((card, idx) => {
+    const el = document.createElement('div');
+    el.className = `attack-card card-rarity-${card.rarity}` + (dead ? ' card-disabled' : '');
+    el.innerHTML = `
+      <span class="card-icon">${card.icon}</span>
+      <div class="card-name">${card.name}</div>
+      <div class="card-dmg">⚔️ ${card.dmg}</div>
+    `;
+    if (!dead) el.onclick = () => playCard(idx);
+    handEl.appendChild(el);
+  });
+
+  if (bossState.hand.length === 0 && !dead) {
+    handEl.innerHTML = '<p style="color:rgba(245,240,232,0.4);font-size:0.85rem;font-family:\'Special Elite\',cursive">Ruka prázdna — doberi karty...</p>';
+  }
+}
+
+function playCard(handIdx) {
+  if (bossState.busy || bossState.hp <= 0 || bossState.playerHp <= 0) return;
+  bossState.busy = true;
+
+  const card = bossState.hand[handIdx];
+  const cardEls = document.querySelectorAll('.attack-card');
+  const cardEl = cardEls[handIdx];
+
+  // Animate card flying out
+  sfx.cardDeal();
+  if (cardEl) {
+    cardEl.classList.add('card-playing');
+    cardEl.style.pointerEvents = 'none';
+  }
+
+  setTimeout(() => {
+    // Remove from hand → discard
+    bossState.hand.splice(handIdx, 1);
+    bossState.discard.push(card);
+
+    // Deal dmg
+    bossState.hp -= card.dmg;
+    spawnDmgFloat(card.dmg);
+    sfx.bossHit(card.dmg);
+    const sprite = document.getElementById('boss-sprite');
+    sprite.classList.add('hit');
+    setTimeout(() => sprite.classList.remove('hit'), 400);
+
+    bossLog(`⚔️ ${card.icon} ${card.name} — Andrei -${card.dmg} HP`, 'dmg');
+
+    // Phase change?
+    const newPhase = getBossPhase();
+    if (newPhase > bossState.phase) {
+      bossState.phase = newPhase;
+      bossLog(`⚡ FÁZA ${newPhase+1}! Andrea sa rozzúrila!`, 'event');
+      showNotification(`💀 ${BOSS_PHASES[newPhase].name} — Silnejšie útoky!`, 'fail');
+    }
+
+    if (bossState.hp <= 0) { bossVictory(); return; }
+
+    // Andrea counter-attacks
+    setTimeout(() => {
+      bossAndreaAttack();
+
+      if (bossState.playerHp > 0) {
+        // Draw 1 card to refill hand back to HAND_SIZE
+        drawCards(HAND_SIZE - bossState.hand.length);
+      }
+
+      bossState.busy = false;
+      renderBossUI();
+    }, 700);
+
+  }, 280);
+}
+
+function bossLog(msg, type = '') {
+  const log = document.getElementById('boss-log');
+  const entry = document.createElement('div');
+  entry.className = 'boss-log-entry ' + type;
+  entry.textContent = msg;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function spawnDmgFloat(dmg, isHeal = false) {
+  const el = document.createElement('div');
+  el.className = 'dmg-float' + (isHeal ? ' heal-float' : '');
+  el.textContent = (isHeal ? '+' : '-') + dmg;
+  const arena = document.getElementById('boss-sprite').getBoundingClientRect();
+  el.style.left = (arena.left + arena.width/2 - 20) + 'px';
+  el.style.top  = (arena.top - 10) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1100);
+}
+
+function bossAndreaAttack() {
+  if (bossState.playerHp <= 0) return;
+  const phase = getBossPhase();
+  const phaseData = BOSS_PHASES[phase];
+  const atk = BOSS_ATTACKS[Math.floor(Math.random() * BOSS_ATTACKS.length)];
+  const rawDmg = atk.dmg[0] + Math.floor(Math.random() * (atk.dmg[1] - atk.dmg[0]));
+  const finalDmg = Math.round(rawDmg * phaseData.dmgMult);
+
+  bossState.playerHp = Math.max(0, bossState.playerHp - finalDmg);
+  sfx.andreaAttack();
+  if (atk.angerBonus) { state.angerLevel = Math.min(100, state.angerLevel + atk.angerBonus); updateStats(); }
+
+  bossLog(`😤 Andrea: ${atk.msg} (${finalDmg} DMG)`, 'dmg');
+
+  if (bossState.playerHp <= 0) {
+    bossLog('💀 Padol si. Andrea ťa skolila.', 'event');
+    document.getElementById('boss-quote').textContent = '"Ďalší neúspešný pokus. Sadni si a napíš test."';
+    document.getElementById('boss-hand').innerHTML = `<p style="color:rgba(245,240,232,0.5);font-size:0.9rem;font-family:'Special Elite',cursive">Porazený. Stlač Reštartovať.</p>`;
+    showNotification('💀 Andrea ťa porazila!', 'fail');
+  }
+}
+
+function bossVictory() {
+  bossState.won = true;
+  const rewardXp = 500;
+  state.xp += rewardXp;
+  state.angerLevel = 0;
+  updateStats();
+  document.getElementById('boss-sprite').className = 'boss-sprite dead';
+  document.getElementById('boss-hp-fill').style.width = '0%';
+  document.getElementById('boss-hp-text').textContent = '0 / 750 HP';
+
+  sfx.victory();
+
+  setTimeout(() => {
+    document.getElementById('boss-main-screen').style.display = 'none';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'epic-victory-overlay';
+    overlay.id = 'epic-victory';
+
+    // Particles
+    const particles = document.createElement('div');
+    particles.className = 'epic-particles';
+    const emojis = ['🏆','⭐','✨','💥','🎉','🔥','👑','💫'];
+    for (let i = 0; i < 22; i++) {
+      const p = document.createElement('div');
+      p.className = 'epic-particle';
+      p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.animationDuration = (3 + Math.random() * 4) + 's';
+      p.style.animationDelay = (Math.random() * 3) + 's';
+      p.style.fontSize = (1 + Math.random() * 1.5) + 'rem';
+      particles.appendChild(p);
+    }
+
+    overlay.innerHTML = `
+      <div class="epic-particles"></div>
+      <div style="font-size:clamp(4rem,15vw,8rem);z-index:1;animation:epicTitlePulse 1s ease infinite alternate;filter:drop-shadow(0 0 30px gold)">🏆</div>
+      <div class="epic-title">VYHRAL SI!</div>
+      <div class="epic-subtitle">"Dobre. Máš jednotku z boja.<br>Ale na maturite ti to nepomôže."<br>— Andrea Lehká, porazená</div>
+      <div class="epic-reward">+${rewardXp} XP &nbsp;·&nbsp; Hnev resetnutý na 0%</div>
+      <button class="epic-restart-btn" onclick="document.getElementById('epic-victory').remove(); resetBossFight()">🔄 Hrať znova</button>
+    `;
+    overlay.querySelector('.epic-particles').replaceWith(particles);
+    document.body.appendChild(overlay);
+    showNotification(`🏆 Andrea porazená! +${rewardXp} XP!`, 'success');
+  }, 600);
+}
+
+// ===================== SOUND ENGINE =====================
+const sfx = (() => {
+  let ctx = null;
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    return ctx;
+  }
+
+  function play(fn) {
+    try { fn(getCtx()); } catch(e) {}
+  }
+
+  function tone(ac, freq, type, start, dur, vol=0.3, fadeOut=true) {
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.type = type; osc.frequency.setValueAtTime(freq, ac.currentTime + start);
+    gain.gain.setValueAtTime(vol, ac.currentTime + start);
+    if (fadeOut) gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + start + dur);
+    osc.start(ac.currentTime + start);
+    osc.stop(ac.currentTime + start + dur + 0.05);
+  }
+
+  function noise(ac, start, dur, vol=0.15) {
+    const buf = ac.createBuffer(1, ac.sampleRate * dur, ac.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const src = ac.createBufferSource();
+    const gain = ac.createGain();
+    src.buffer = buf; src.connect(gain); gain.connect(ac.destination);
+    gain.gain.setValueAtTime(vol, ac.currentTime + start);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + start + dur);
+    src.start(ac.currentTime + start);
+  }
+
+  return {
+    // 🎰 Slot spin — whirring
+    slotSpin() { play(ac => {
+      for (let i = 0; i < 8; i++) noise(ac, i*0.07, 0.1, 0.1);
+      tone(ac, 200, 'sawtooth', 0, 0.5, 0.05);
+    }); },
+
+    // 🎰 Slot stop — thunk per reel
+    slotStop(reelIdx) { play(ac => {
+      tone(ac, 180 - reelIdx*20, 'square', 0, 0.12, 0.2);
+      noise(ac, 0, 0.08, 0.2);
+    }); },
+
+    // 🎰 Slot win
+    slotWin() { play(ac => {
+      [523,659,784,1047].forEach((f,i) => tone(ac, f, 'triangle', i*0.1, 0.2, 0.25));
+    }); },
+
+    // 🎰 Slot jackpot
+    slotJackpot() { play(ac => {
+      [523,659,784,1047,1319,1568].forEach((f,i) => {
+        tone(ac, f, 'triangle', i*0.08, 0.3, 0.3);
+        tone(ac, f*2, 'sine', i*0.08+0.04, 0.2, 0.15);
+      });
+    }); },
+
+    // 🎰 Slot lose
+    slotLose() { play(ac => {
+      tone(ac, 300, 'sawtooth', 0,   0.15, 0.2);
+      tone(ac, 200, 'sawtooth', 0.1, 0.2,  0.2);
+      tone(ac, 150, 'sawtooth', 0.2, 0.25, 0.2);
+    }); },
+
+    // 🃏 Card deal — soft whoosh
+    cardDeal() { play(ac => {
+      noise(ac, 0, 0.08, 0.12);
+      tone(ac, 800, 'sine', 0, 0.06, 0.1);
+    }); },
+
+    // ⚔️ Boss hit — impact
+    bossHit(dmg) { play(ac => {
+      const power = Math.min(dmg / 400, 1);
+      noise(ac, 0, 0.15, 0.3 + power * 0.3);
+      tone(ac, 100 + power * 80, 'square', 0, 0.2, 0.25 + power * 0.2);
+      if (power > 0.5) tone(ac, 60, 'sawtooth', 0.05, 0.25, 0.3);
+    }); },
+
+    // 😤 Andrea attacks player
+    andreaAttack() { play(ac => {
+      tone(ac, 400, 'sawtooth', 0,    0.08, 0.2);
+      tone(ac, 300, 'sawtooth', 0.06, 0.1,  0.2);
+      noise(ac, 0, 0.1, 0.15);
+    }); },
+
+    // 🃏 BJ card deal
+    bjCard() { play(ac => {
+      noise(ac, 0, 0.05, 0.15);
+      tone(ac, 1200, 'sine', 0, 0.05, 0.12);
+    }); },
+
+    // 🃏 BJ win
+    bjWin() { play(ac => {
+      [440,550,660,880].forEach((f,i) => tone(ac, f, 'triangle', i*0.09, 0.2, 0.2));
+    }); },
+
+    // 🃏 BJ lose
+    bjLose() { play(ac => {
+      tone(ac, 250, 'sawtooth', 0,   0.2, 0.2);
+      tone(ac, 180, 'sawtooth', 0.15,0.25,0.2);
+    }); },
+
+    // 🏆 Victory fanfare
+    victory() { play(ac => {
+      const melody = [523,659,784,659,784,1047];
+      melody.forEach((f,i) => {
+        tone(ac, f,   'triangle', i*0.12, 0.3, 0.3);
+        tone(ac, f/2, 'sine',     i*0.12, 0.3, 0.15);
+      });
+      noise(ac, 0, 0.05, 0.3);
+    }); },
+
+    // 🎰 Random event spin
+    eventSpin() { play(ac => {
+      for (let i = 0; i < 6; i++) tone(ac, 300 + i*50, 'sawtooth', i*0.05, 0.08, 0.12);
+    }); },
+  };
+})();
+
+// ===================== SECRET DEV CONSOLE =====================
+(function() {
+  // Desktop: type "skibidi"
+  let keyBuffer = '';
+  const SECRET = 'skibidi';
+  document.addEventListener('keydown', e => {
+    keyBuffer += e.key.toLowerCase();
+    if (keyBuffer.length > SECRET.length) keyBuffer = keyBuffer.slice(-SECRET.length);
+    if (keyBuffer === SECRET) { keyBuffer = ''; showDevConsole(); }
+  });
+
+  // Mobile + Desktop: klikni 5x na avatar → zobraz kod input
+  let tapCount = 0;
+  document.getElementById('teacher-avatar').addEventListener('click', () => {
+    tapCount++;
+    if (tapCount >= 5) { tapCount = 0; showDevUnlock(); }
+  });
+})();
+
+function showDevUnlock() {
+  if (document.getElementById('dev-unlock') || document.getElementById('dev-console')) return;
+  const el = document.createElement('div');
+  el.id = 'dev-unlock';
+  el.style.cssText = `
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:linear-gradient(135deg,#0a0a0a,#1a0a2e);
+    border:2px solid rgba(0,255,65,0.4); border-radius:16px;
+    padding:1.2rem 1.5rem; z-index:999999;
+    font-family:'Courier New',monospace; width:300px; max-width:92vw;
+    box-shadow:0 0 20px rgba(0,255,65,0.2);
+    animation:panelIn 0.3s ease;
+  `;
+  el.innerHTML = `
+    <div style="color:rgba(0,255,65,0.7);font-size:0.7rem;letter-spacing:2px;margin-bottom:0.8rem;display:flex;justify-content:space-between">
+      <span>// ZADAJ KÓD</span>
+      <button onclick="document.getElementById('dev-unlock').remove()" style="background:none;border:none;color:rgba(0,255,65,0.5);cursor:pointer;font-size:1rem">✕</button>
+    </div>
+    <div style="display:flex;gap:0.5rem;align-items:center">
+      <input id="dev-code-input" type="password" placeholder="••••••••"
+        style="flex:1;background:rgba(0,255,65,0.06);border:1px solid rgba(0,255,65,0.4);border-radius:8px;padding:0.5rem 0.7rem;color:#00ff41;font-family:'Courier New',monospace;font-size:0.95rem;outline:none;width:0;letter-spacing:3px"
+      >
+      <button onclick="checkDevCode()" style="background:rgba(0,255,65,0.15);color:#00ff41;border:1px solid #00ff41;border-radius:8px;padding:0.5rem 0.9rem;cursor:pointer;font-family:'Courier New',monospace;font-size:0.85rem">▶</button>
+    </div>
+    <div id="dev-unlock-feedback" style="color:rgba(255,59,59,0.7);font-size:0.7rem;margin-top:0.5rem;min-height:1rem"></div>
+  `;
+  document.body.appendChild(el);
+  document.getElementById('dev-code-input').focus();
+  document.getElementById('dev-code-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkDevCode(); });
+}
+
+function checkDevCode() {
+  const val = document.getElementById('dev-code-input').value;
+  if (val.toLowerCase() === 'skibidi') {
+    document.getElementById('dev-unlock').remove();
+    showDevConsole();
+  } else if (val.toLowerCase() === 'update') {
+    document.getElementById('dev-unlock').remove();
+    localStorage.removeItem('seen_update_v2');
+    showUpdatePopup();
+  } else {
+    document.getElementById('dev-unlock-feedback').textContent = '> ACCESS DENIED';
+    document.getElementById('dev-code-input').value = '';
+    document.getElementById('dev-code-input').style.borderColor = '#ff3b3b';
+    setTimeout(() => {
+      const inp = document.getElementById('dev-code-input');
+      if (inp) inp.style.borderColor = 'rgba(0,255,65,0.4)';
+    }, 800);
+  }
+}
+
+function showDevConsole() {
+  if (document.getElementById('dev-console')) return;
+  const el = document.createElement('div');
+  el.id = 'dev-console';
+  el.style.cssText = `
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:linear-gradient(135deg,#0a0a0a,#1a0a2e);
+    border:2px solid #00ff41; border-radius:16px;
+    padding:1.2rem 1.5rem; z-index:999999;
+    font-family:'Courier New',monospace; width:320px; max-width:92vw;
+    box-shadow:0 0 30px rgba(0,255,65,0.4), 0 0 60px rgba(0,255,65,0.1);
+    animation:panelIn 0.3s ease;
+  `;
+  el.innerHTML = `
+    <div style="color:#00ff41;font-size:0.75rem;letter-spacing:2px;margin-bottom:0.8rem;display:flex;justify-content:space-between;align-items:center">
+      <span>// DEV CONSOLE v1.0</span>
+      <button onclick="document.getElementById('dev-console').remove()" style="background:none;border:none;color:#00ff41;cursor:pointer;font-size:1rem">✕</button>
+    </div>
+    <div style="color:rgba(0,255,65,0.6);font-size:0.7rem;margin-bottom:0.8rem">current XP: <span style="color:#00ff41" id="dev-cur-xp">${state.xp}</span></div>
+    <div style="display:flex;gap:0.5rem;align-items:center">
+      <input id="dev-xp-input" type="number" min="0" max="999999" placeholder="nastavit XP..."
+        style="flex:1;background:rgba(0,255,65,0.08);border:1px solid #00ff41;border-radius:8px;padding:0.5rem 0.7rem;color:#00ff41;font-family:'Courier New',monospace;font-size:0.9rem;outline:none;width:0"
+      >
+      <button onclick="devSetXP()" style="background:#00ff41;color:#0a0a0a;border:none;border-radius:8px;padding:0.5rem 0.9rem;cursor:pointer;font-family:'Courier New',monospace;font-weight:900;font-size:0.85rem;white-space:nowrap">SET ▶</button>
+    </div>
+    <div id="dev-feedback" style="color:rgba(0,255,65,0.5);font-size:0.7rem;margin-top:0.5rem;min-height:1rem"></div>
+  `;
+  document.body.appendChild(el);
+  document.getElementById('dev-xp-input').focus();
+  document.getElementById('dev-xp-input').addEventListener('keydown', e => { if (e.key === 'Enter') devSetXP(); });
+}
+
+function devSetXP() {
+  const val = parseInt(document.getElementById('dev-xp-input').value);
+  if (isNaN(val) || val < 0) {
+    document.getElementById('dev-feedback').textContent = '> ERROR: neplatná hodnota';
+    return;
+  }
+  state.xp = val;
+  updateStats();
+  document.getElementById('dev-cur-xp').textContent = val;
+  document.getElementById('dev-xp-input').value = '';
+  document.getElementById('dev-feedback').textContent = `> XP nastavené na ${val} ✓`;
+}
+renderTests();
+renderStories();
+renderUpgrades();
+updateStats();
+initRandomEvent();
+initCasino();
+
+
+
+// Show update popup if not seen before
+if (!localStorage.getItem('seen_update_v2')) showUpdatePopup();
+
+function showUpdatePopup() {
+  // Floaters
+  const floatEmojis = ['💀','🃏','🎰','⭐','🔥','💥','👑','😤','🏆','✨'];
+  for (let i = 0; i < 12; i++) {
+    const el = document.createElement('div');
+    el.className = 'update-floater';
+    el.textContent = floatEmojis[Math.floor(Math.random() * floatEmojis.length)];
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.animationDuration = (4 + Math.random() * 5) + 's';
+    el.style.animationDelay = (Math.random() * 3) + 's';
+    el.id = 'floater-' + i;
+    document.body.appendChild(el);
+  }
+
+  const bg = document.createElement('div');
+  bg.className = 'update-popup-bg';
+  bg.id = 'update-popup-bg';
+  bg.innerHTML = `
+    <div class="update-popup">
+      <div class="update-popup-inner">
+        <div class="update-badge">🔥 Nový Update</div>
+        <span class="update-version">v2.0</span>
+        <div class="update-title">— Čo je nové —</div>
+        <ul class="update-features">
+          <li class="update-feature">
+            <span class="update-feature-icon">💀</span>
+            <div class="update-feature-text">
+              <div class="update-feature-name">Andrea Boss Fight</div>
+              <div class="update-feature-desc">Spôsob ako vyhrať hru. Kúp útočné karty, zostav balíček a poraz Andreu v 3 fázach.</div>
+            </div>
+          </li>
+          <li class="update-feature">
+            <span class="update-feature-icon">🃏</span>
+            <div class="update-feature-text">
+              <div class="update-feature-name">Automaty cez hodinu</div>
+              <div class="update-feature-desc">Blackjack vs Andrea + Školský Automat. Odomkni ich testom z angličtiny a stav svoje XP.</div>
+            </div>
+          </li>
+          <li class="update-feature">
+            <span class="update-feature-icon">🎰</span>
+            <div class="update-feature-text">
+              <div class="update-feature-name">Random Event</div>
+              <div class="update-feature-desc">Zatoč kolom každých 1:30 min. 6 zlých eventov, 4 dobré. Andrea vždy vyhrá.</div>
+            </div>
+          </li>
+          <li class="update-feature">
+            <span class="update-feature-icon">🔊</span>
+            <div class="update-feature-text">
+              <div class="update-feature-name">Zvukové efekty</div>
+              <div class="update-feature-desc">Zvuky pri útoku, točení slotu, rozdávaní kariet, výhre aj prehre.</div>
+            </div>
+          </li>
+          <li class="update-feature">
+            <span class="update-feature-icon" style="color:#00ff41">💻</span>
+            <div class="update-feature-text">
+              <div class="update-feature-name">Tajné Dev Menu</div>
+              <div class="update-feature-desc">Klikni 5× na Andrein avatar a zadaj tajný kód. Čo sa stane? Zisti sám.</div>
+            </div>
+          </li>
+        </ul>
+        <button class="update-close-btn" onclick="closeUpdatePopup()">🚀 Hrať v2.0!</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(bg);
+}
+
+function closeUpdatePopup() {
+  localStorage.setItem('seen_update_v2', '1');
+  const bg = document.getElementById('update-popup-bg');
+  if (bg) { bg.style.animation = 'updateBgOut 0.3s ease forwards'; setTimeout(() => bg.remove(), 300); }
+  for (let i = 0; i < 12; i++) document.getElementById('floater-' + i)?.remove();
+  // Add fade out keyframe dynamically
+  const style = document.createElement('style');
+  style.textContent = '@keyframes updateBgOut { to { opacity:0; } }';
+  document.head.appendChild(style);
+}
+</script>
+<!-- PWA Install Banner -->
+<div id="pwa-install-banner" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99990;background:linear-gradient(135deg,#8B5CF6,#FF6EB4);border-radius:16px;padding:1rem 1.5rem;display:none;align-items:center;gap:1rem;box-shadow:0 10px 40px rgba(0,0,0,0.4);max-width:340px;width:90%;">
+  <span style="font-size:2rem">📲</span>
+  <div style="flex:1">
+    <div style="font-family:'Permanent Marker',cursive;color:white;font-size:0.95rem">Nainštalovať appku</div>
+    <div style="color:rgba(255,255,255,0.8);font-size:0.8rem">Pridaj na plochu telefónu!</div>
+  </div>
+  <button id="pwa-install-btn" style="font-family:'Permanent Marker',cursive;background:white;color:#8B5CF6;border:none;border-radius:50px;padding:0.5rem 1rem;cursor:pointer;font-size:0.85rem;white-space:nowrap">Inštalovať</button>
+  <button onclick="document.getElementById('pwa-install-banner').style.display='none'" style="background:none;border:none;color:white;cursor:pointer;font-size:1.2rem;padding:0">✕</button>
+</div>
+
+<script>
+// Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+// PWA Install prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const banner = document.getElementById('pwa-install-banner');
+  banner.style.display = 'flex';
+});
+
+document.getElementById('pwa-install-btn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('pwa-install-banner').style.display = 'none';
+  if (outcome === 'accepted') showNotification('🎉 Appka nainštalovaná!', 'success');
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('pwa-install-banner').style.display = 'none';
+  showNotification('✅ Appka je na ploche!', 'success');
+});
+</script>
+</body>
+</html>
